@@ -7,8 +7,8 @@ const body = Onest({ subsets: ["latin", "cyrillic"], variable: "--font-body" });
 const head = Unbounded({ subsets: ["latin", "cyrillic"], variable: "--font-head", weight: ["500", "700"] });
 
 export const metadata: Metadata = {
-  title: "Отвес — ремонт квартир в Астане под ключ",
-  description: "Ремонт квартир в Астане с фиксированной сметой и сроком в договоре. Замер и расчёт бесплатно.",
+  title: "Горизонт — туры из Астаны",
+  description: "Туры из Астаны: Турция, ОАЭ, Египет, Таиланд, Грузия, Япония. Перелёт, отель и виза под ключ.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -17,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Header />
         {children}
-        <footer><span>© 2026 Отвес</span><span>Астана · пн–сб 9:00–20:00</span></footer>
+        <footer><span>© 2026 Горизонт</span><span>Астана · пн–сб 9:00–20:00</span></footer>
       </body>
     </html>
   );

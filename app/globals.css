@@ -1,4 +1,4 @@
-:root{--bg:#e9ebe6;--ink:#16202e;--mute:#5d6673;--line:#c9cdc5;--sig:#f2b705;--blue:#1d4ed8;--r:6px}
+:root{--bg:#f4efe6;--ink:#0e2a3a;--mute:#5b6b76;--line:#d9d1c2;--sig:#ff7a59;--blue:#0b6bcb;--r:6px}
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--ink);font:17px/1.6 var(--font-body),system-ui,sans-serif}
@@ -61,7 +61,7 @@ footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;paddin
 .narrow{max-width:520px}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}
 .tab{padding:10px 18px;border:2px solid var(--ink);border-radius:999px;background:transparent;color:var(--ink)}
-.tab:hover{background:#dfe2db}
+.tab:hover{background:#eadfcd}
 .tab[aria-selected="true"]{background:var(--ink);color:#fff}
 .panel{border:2px solid var(--ink);border-radius:var(--r);padding:28px;max-width:640px}
 .big{font:700 clamp(28px,4vw,44px)/1.1 var(--font-head);margin:6px 0}
@@ -79,3 +79,19 @@ input[type=range]{padding:0;accent-color:var(--ink);border:0;background:none}
 .card .ph{aspect-ratio:4/3;border-radius:var(--r);margin-bottom:12px}
 .card h3{font-size:19px;margin-bottom:4px}
 button:disabled{opacity:.6;cursor:wait}
+
+select{font:inherit;padding:14px;border:2px solid var(--ink);border-radius:var(--r);background:#fff}
+.filters{max-width:520px;margin-bottom:8px}
+.board{max-width:760px;background:#0b1620;color:#ffd24a;font:500 15px/1 ui-monospace,Menlo,Consolas,monospace;border-radius:var(--r);padding:8px 18px}
+.board .row{display:grid;grid-template-columns:64px 1fr 56px 130px;gap:12px;padding:13px 0;border-bottom:1px dashed #2b3d4d}
+.board .row:last-child{border:0}
+.board .head{color:#7f93a3;font-size:12px;text-transform:uppercase}
+.board .low{color:#ff7a59}
+.tag{display:inline-block;padding:2px 10px;border-radius:999px;background:var(--ink);color:#fff;font-size:13px;margin:4px 0}
+.cardlink{text-decoration:none;display:block}
+.cardlink:hover h3{text-decoration:underline}
+.tour-hero{height:240px;border-radius:var(--r);margin:16px 0 32px}
+.low-note{color:#b42318;font-weight:600}
+.reviews{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
+.rev{border-top:4px solid var(--sig);padding-top:14px}
+@media(max-width:760px){.board .row{grid-template-columns:56px 1fr 110px}.board .d{display:none}}

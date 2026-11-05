@@ -1,66 +1,45 @@
 import Link from "next/link";
-import Level from "@/components/Level";
+import DepartureBoard from "@/components/DepartureBoard";
+import TourCard from "@/components/TourCard";
 import ContactForm from "@/components/ContactForm";
-
-const services = [
-  ["Черновой ремонт", "Стяжка, выравнивание стен, электрика, сантехника. От 25 000 ₸/м²."],
-  ["Чистовая отделка", "Покраска, плитка, полы, двери. От 40 000 ₸/м²."],
-  ["Ремонт под ключ", "Дизайн-проект, закупка, отделка и уборка. От 70 000 ₸/м²."],
-];
-const steps = [
-  ["Замер и смета", "Приезжаем бесплатно, через 2 дня отдаём смету с каждой позицией."],
-  ["Договор", "Срок и цена фиксируются. Каждый день просрочки — 0,5% неустойки."],
-  ["Работы", "Фотоотчёт каждый день, приёмка по этапам."],
-  ["Сдача", "Проверяем уровнем и лазером. Гарантия 3 года."],
-];
-const faq = [
-  ["Смета может вырасти?", "Нет. Если мы ошиблись в расчёте — доплачиваем сами. Изменения допускаются только по вашему письменному согласию."],
-  ["Сколько длится ремонт?", "Двушка 55 м² под ключ — 70–90 дней. Точный срок пишем в договоре."],
-  ["Можно жить в квартире во время работ?", "Для чернового этапа — нет, для чистовой отделки отдельных комнат — да."],
-];
+import { tours } from "@/lib/data";
 
 export default function Home() {
   return (
-    <>
+    <main>
+      <section className="hero">
+        <h1>Мир ближе,<br />чем кажется</h1>
+        <p className="lead">Туры из Астаны с перелётом, отелем и визовой поддержкой. Подберём за час.</p>
+        <DepartureBoard />
+        <Link href="/tours" className="btn">Выбрать тур</Link>
+      </section>
 
-      <main>
-        <section className="hero">
-          <h1>Ремонт, который<br />сдаётся по уровню</h1>
-          <p className="lead">Фиксированная смета и срок в договоре. Бесплатный замер за 2 дня.</p>
-          <Level />
-          <Link href="/calculator" className="btn">Рассчитать ремонт</Link>
-        </section>
+      <section className="sec">
+        <h2>Горящие предложения</h2>
+        <ul className="grid">{tours.slice(0, 3).map((t) => <TourCard key={t.id} t={t} />)}</ul>
+        <p style={{ marginTop: 24 }}><Link href="/tours">Все туры →</Link></p>
+      </section>
 
-        <section id="services" className="sec">
-          <h2>Что делаем</h2>
-          <ul className="rows">
-            {services.map(([t, d]) => (<li key={t}><h3>{t}</h3><p>{d}</p></li>))}
-          </ul>
-        </section>
+      <section className="sec dark">
+        <h2>Как это работает</h2>
+        <ol className="steps">
+          <li><h3>Заявка</h3><p>Выберите тур или опишите пожелания.</p></li>
+          <li><h3>Подбор</h3><p>Менеджер предложит 2–3 варианта за час.</p></li>
+          <li><h3>Договор</h3><p>Предоплата 30%, остальное за 14 дней до вылета.</p></li>
+          <li><h3>Вылет</h3><p>Документы в мессенджер, поддержка 24/7 в поездке.</p></li>
+        </ol>
+      </section>
 
-        <section id="process" className="sec dark">
-          <h2>Как работаем</h2>
-          <ol className="steps">
-            {steps.map(([t, d]) => (<li key={t}><h3>{t}</h3><p>{d}</p></li>))}
-          </ol>
-        </section>
+      <section className="sec facts">
+        <div><b>9 лет</b><span>на рынке Астаны</span></div>
+        <div><b>6 400</b><span>довольных туристов</span></div>
+        <div><b>40+</b><span>стран в каталоге</span></div>
+      </section>
 
-        <section className="sec facts">
-          <div><b>412</b><span>квартир сдано с 2014 года</span></div>
-          <div><b>3 года</b><span>гарантия на все работы</span></div>
-          <div><b>0 ₸</b><span>за замер и смету</span></div>
-        </section>
-
-        <section id="faq" className="sec">
-          <h2>Частые вопросы</h2>
-          {faq.map(([q, a]) => (<details key={q}><summary>{q}</summary><p>{a}</p></details>))}
-        </section>
-
-        <section id="contact" className="sec contact">
-          <div><h2>Узнайте стоимость за день</h2><p>Оставьте телефон — позвоним, уточним детали и договоримся о замере.</p></div>
-          <ContactForm />
-        </section>
-      </main>
-    </>
+      <section className="sec contact">
+        <div><h2>Не знаете, куда поехать?</h2><p>Оставьте телефон. Предложим направления под ваш бюджет и даты.</p></div>
+        <ContactForm />
+      </section>
+    </main>
   );
 }
