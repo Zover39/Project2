@@ -18,9 +18,9 @@ export default function ContactForm() {
     <form onSubmit={submit} noValidate>
       <label>Имя<input name="name" autoComplete="name" required /></label>
       <label>Телефон<input name="phone" type="tel" autoComplete="tel" inputMode="tel" required aria-describedby="e" /></label>
-      <label>Площадь квартиры, м²<input name="area" inputMode="numeric" /></label>
+      <label>Куда хотите поехать?<input name="wish" placeholder="Например, море в январе" /></label>
       <p id="e" className="err" role="alert">{err}</p>
-      <button type="submit">Заказать бесплатный замер</button>
+      <button type="submit">Получить подбор туров</button>
     </form>
   );
 }
