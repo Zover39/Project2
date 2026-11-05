@@ -1,25 +1,3 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-
-/* Тёмная тема: переопределяем используемые цвета Tailwind */
-.dark body { background: #0a1822; color: #e8f1f6; }
-.dark .bg-white { background-color: #122533; }
-.dark .bg-white\/90 { background-color: rgba(18, 37, 51, 0.92); }
-.dark .bg-slate-50 { background-color: #0a1822; }
-.dark .bg-slate-100, .dark .hover\:bg-slate-100:hover { background-color: #1b3446; }
-.dark .bg-blue-50 { background-color: #123246; }
-.dark .bg-emerald-50 { background-color: #0f3a2c; }
-.dark .text-slate-900, .dark .text-slate-800 { color: #e8f1f6; }
-.dark .text-slate-700, .dark .text-slate-600 { color: #b6cad7; }
-.dark .text-slate-500, .dark .text-slate-400 { color: #8fa8b8; }
-.dark .text-blue-600 { color: #5cc7e6; }
-.dark .border-slate-100, .dark .border-slate-200 { border-color: #223a4b; }
-.dark .border-blue-100 { border-color: #1f4a63; }
-.dark input, .dark select { color: #e8f1f6; }
-.dark .bg-white\/90.text-slate-700, .dark button.bg-white\/90 { background-color: rgba(18, 37, 51, 0.92); }
-
-:focus-visible { outline: 3px solid #fec50c; outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
