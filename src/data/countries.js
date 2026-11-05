@@ -1,39 +1,507 @@
-// Данные: страны и отели (иллюстративные)
-export const U=id=>`https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=900&q=75`;
-const HP=['1582719508461-905c673771fd','1566073771259-6a8506099945','1571896349842-33c89424de2d','1540555700478-4be289fbecef','1561501900-3701fa6a0864','1584132967334-10e028bd69f7'];
-// отель: [название, звёзды, пляж, описание, спорт, рестораны, детям, входит в тур, [[номер, цена за 1 чел./7 ночей]]]
-export const C=[
-{id:'uae',n:'ОАЭ',sub:'Дубай · Абу-Даби',img:'1512453979798-5ea266f8880c',d:'Небоскрёбы, роскошные пляжи и шопинг мирового уровня.',fl:'Прямой рейс, ~4,5 ч',h:[
- ['Burj Al Arab Jumeirah',5,'Первая линия, частный пляж','Легендарный отель-парус с люксами и сервисом высшего уровня.','Фитнес, йога на пляже, теннис','7 ресторанов, 4 бара','Детский клуб, бассейн с горками',['VIP-трансфер','Страховка','Консьерж 24/7'],[['Deluxe Suite',450000],['Panoramic Suite',620000],['Presidential Suite',950000]]],
- ['Atlantis, The Palm',5,'Первая линия, остров Пальма','Курорт с аквапарком Aquaventure на Пальме Джумейра.','Дайвинг, аквапарк, фитнес','29 ресторанов и баров','Детский клуб, няня',['Групповой трансфер','Страховка','Вход в Aquaventure'],[['Ocean King Room',280000],['Palm Pool Club Room',340000],['Family Suite 2 спальни',580000]]],
- ['Rixos The Palm Dubai',5,'Первая линия, частный пляж','Премиальный отель с системой «Ультра всё включено».','Теннис, спорт-клуб, аквааэробика','A la carte, пляжные бары','Rixy Kids Club',['Трансфер','Ultra All Inclusive','Страховка'],[['Deluxe Garden View',310000],['Deluxe Sea View',390000],['Family Suite 2 спальни',650000]]]]},
-{id:'tr',n:'Турция',sub:'Кемер · Белек · Сиде',img:'1524231757913-215fce3a9b5a',d:'Пляжный отдых, сосновые горы и развитый All Inclusive.',fl:'Прямой рейс, ~5 ч',h:[
- ['Maxx Royal Kemer Resort',5,'Первая линия, пирс','Элитный курорт среди сосновых холмов Кемера.','Теннис, футбол, водные лыжи','5 ресторанов, 11 баров','Maxxi Land, лунапарк',['Трансфер','Ultra All Inclusive','Страховка'],[['Suite Main Building',260000],['Terrace Suite с джакузи',350000],['Laguna Duplex Suite',490000]]],
- ['Regnum Carya',5,'Первая линия, белый песок','Гольф-отель Белека с аквапарком.','Гольф, футбол, теннис','Шведский стол + 7 a la carte','Dino Land, спортакадемия',['Трансфер','Luxury AI','Страховка'],[['Luxury Golf View',220000],['Luxury Sea View',290000],['Family Roof Suite',420000]]],
- ['Rixos Sungate',5,'Первая линия, галечный пляж','Большой комплекс для активного семейного отдыха.','Боулинг, теннис, аквапарк','10 ресторанов, ночной клуб','Rixy Kids Club, горки',['Трансфер','UAI','Страховка'],[['Standard Garden View',150000],['Family Sea View',210000],['Grand Suite',340000]]]]},
-{id:'th',n:'Таиланд',sub:'Пхукет · Паттайя · Самуи',img:'1537996194471-e657df975ab4',d:'Бирюзовые лагуны, храмы и экзотическая кухня.',fl:'С пересадкой, ~7,5 ч',h:[
- ['Rosewood Phuket',5,'Первая линия, бухта Эмеральд','Уединённый курорт с тропическим садом и виллами.','Йога на закате, каякинг, снорклинг','4 ресторана премиум-класса','Детский клуб, ремёсла',['Трансфер','Завтраки','Страховка'],[['Ocean Pool Pavilion',320000],['Beachfront Pool Villa',480000],['Sunset Villa 2 спальни',780000]]],
- ['Centara Grand Beach Phuket',5,'Первая линия, пляж Карон','Курорт в колониальном стиле с аквапарком.','Водный парк, теннис, фитнес','5 ресторанов и баров','Camp Safari',['Трансфер','Завтраки','Страховка'],[['Deluxe Ocean View',180000],['Luxury Ocean Suite',250000],['Pool Suite Beachfront',380000]]],
- ['Amari Phuket',4,'Первая линия, мыс Патонг','Панорамные виды на залив и собственный риф.','Фитнес, дайвинг-центр','Rim Talay, тайская и итальянская кухня','Детский клуб',['Трансфер','Завтраки','Страховка'],[['Superior Ocean Facing',130000],['Deluxe Ocean View',165000],['Suite Club Access',240000]]]]},
-{id:'eg',n:'Египет',sub:'Шарм-эль-Шейх · Хургада',img:'1539650116574-8efeb43e2750',d:'Красное море, коралловые рифы и солнце круглый год.',fl:'Чартер, ~6 ч',h:[
- ['Rixos Sharm El Sheikh',5,'Первая линия, коралловый риф','Только для взрослых, «Ультра всё включено».','Дайвинг, теннис, волейбол','7 ресторанов a la carte','Гости старше 16 лет',['Трансфер','Ultra All Inclusive','Страховка'],[['Superior Garden View',170000],['Deluxe Sea View',220000],['Junior Suite с джакузи',310000]]],
- ['Sunrise Arabian Beach',5,'Первая линия, Шаркс-Бей','Курорт в арабском стиле с рифом для снорклинга.','Дайвинг, водное поло','6 ресторанов','Kids Planet',['Трансфер','All Inclusive','Страховка'],[['Superior Partial Sea View',155000],['Deluxe Swim-Up',210000],['Royal Suite',350000]]],
- ['Jaz Aquamarine Hurghada',5,'Первая линия, лагуна','Семейный отель с 20 бассейнами и аквапарком.','Аквапарк, теннис, виндсёрфинг','6 ресторанов','Детский клуб, мини-диско',['Трансфер','All Inclusive','Страховка'],[['Superior Garden View',130000],['Family Pool View',175000],['Deluxe Suite Sea View',240000]]]]},
-{id:'mv',n:'Мальдивы',sub:'Северный Мале · Ари · Баа',img:'1514282401047-d79a71a590e8',d:'Белые косы, бирюзовые атоллы и бунгало на воде.',fl:'С пересадкой, ~9 ч',h:[
- ['Soneva Fushi',5,'Частный остров','Эко-курорт на необитаемом острове.','Дайвинг, обсерватория, теннис','9 ресторанов органик-кухни','The Den, кинотеатр под открытым небом',['Гидросамолёт','Завтрак и ужин','Страховка'],[['Crusoe Villa',750000],['Water Reserve Villa',1100000],['Sunset Reserve 2 спальни',1650000]]],
- ['Kurumba Maldives',5,'Первая линия, домашний риф','Первый курорт Мальдив, 10 минут на катере от Мале.','Теннис, каякинг, парусный спорт','8 ресторанов, живая музыка','Majaa Kids Club',['Катер','Завтраки','Страховка'],[['Superior Beach Bungalow',340000],['Deluxe Pool Villa',520000],['Royal Residence',890000]]],
- ['Bandos Maldives',4,'Первая линия, лагуна','Уютный остров, отличный дайвинг.','PADI-центр, сквош, фитнес','4 ресторана, 3 бара','Kokko Club',['Катер','Завтраки','Страховка'],[['Standard Room',240000],['Deluxe Beach Villa',380000],['Jacuzzi Beach Villa',490000]]]]},
-{id:'vn',n:'Вьетнам',sub:'Фукуок · Нячанг · Дананг',img:'1509042239860-f550ce710b93',d:'Живописные бухты, пляжи и азиатская культура.',fl:'С пересадкой, ~7,5 ч',h:[
- ['InterContinental Phu Quoc',5,'Первая линия, Лонг-Бич','Курорт со SPA и баром на крыше.','Йога, фитнес 24/7, байдарки','4 ресторана и бара','Planet Trekkers',['Трансфер','Завтраки','Страховка'],[['Classic Ocean View',160000],['Resort Suite',230000],['Villa 2 спальни с бассейном',410000]]],
- ['JW Marriott Phu Quoc',5,'Первая линия, пляж Кхем','Необычная архитектура Билла Бенсли.','Водный спорт, велопрогулки','3 ресторана и бары','Детский клуб',['Трансфер','Завтраки','Страховка'],[['Emerald Bay View',210000],['Deluxe Turquoise Suite',310000],['One Bedroom Villa',550000]]],
- ['Vinpearl Nha Trang Bay',5,'Первая линия, остров Хон Че','Вид на залив и доступ в парк VinWonders.','Фитнес, аквапарк рядом, теннис','Шведский стол, гриль-бары','Kids Club, аттракционы',['Трансфер','Завтраки','Страховка'],[['Deluxe Ocean View',125000],['Executive Suite',190000],['Villa 3 спальни',380000]]]]},
-{id:'id',n:'Индонезия',sub:'Бали · Убуд · Нуса-Дуа',img:'1537996194471-e657df975ab4',d:'Рисовые террасы, храмы, серфинг и виллы в джунглях.',fl:'С пересадкой, ~10 ч',h:[
- ['The Mulia Bali',5,'Первая линия, Нуса-Дуа','Курорт с бассейнами бирюзовой воды.','Фитнес, йога, пилатес','5 ресторанов и баров','Mulia Kidz Club',['Трансфер','Завтраки','Страховка'],[['Mulia Grandeur Room',240000],['Signature Ocean Court',320000],['Villa с бассейном',580000]]],
- ['Capella Ubud',5,'Джунгли Убуда','Люкс-шатры среди дождевого леса и рисовых террас.','Треккинг, йога-павильон','Mads Lange, Auriga','Эко-программа для детей',['Трансфер','Завтраки','Страховка'],[['Terrace Tent с бассейном',390000],['Valley Tent с джакузи',490000],['Camp 2 спальни',780000]]],
- ['AYANA Resort Bali',5,'Утёсы Джимбарана','Курорт с культовым Rock Bar на скале.','Гольф, теннис, 12 бассейнов','19 ресторанов и баров','Kids Club, горки',['Трансфер','Завтраки','Страховка'],[['Resort View Room',190000],['Ocean View Room',260000],['Cliff Villa с бассейном',480000]]]]}
+// Курс ₸ за 1 $ (ориентировочный, для переключателя валюты)
+export const RATE = 500;
+
+export const FLIGHT_CLASSES = [
+  { id: 'economy', label: 'Эконом', k: 1 },
+  { id: 'business', label: 'Бизнес', k: 1.6 },
+  { id: 'first', label: 'Первый', k: 2.4 },
 ];
-C.forEach(c=>c.h=c.h.map((a,i)=>({id:c.id+i,cid:c.id,name:a[0],stars:a[1],beach:a[2],desc:a[3],sport:a[4],food:a[5],kids:a[6],inc:a[7],rooms:a[8].map(r=>({t:r[0],p:r[1]})),img:HP[(i+c.id.length)%HP.length]})));
-export const HOTELS=C.flatMap(c=>c.h);
-export const minPrice=h=>Math.min(...h.rooms.map(r=>r.p));
-export const RATE=500; // курс ₸ за $1 (ориентировочный)
-export const FLIGHT={economy:['Эконом',1],business:['Бизнес',1.6],first:['Первый',2.4]};
+
+export const MEALS = [
+  { id: 'all', label: 'Любое питание' },
+  { id: 'uai', label: 'Ультра всё включено (UAI)' },
+  { id: 'ai', label: 'Всё включено (AI)' },
+  { id: 'hb', label: 'Полупансион (HB)' },
+  { id: 'bb', label: 'Завтраки (BB)' },
+];
+
+// База данных стран и отелей: фото, удобства, цены в ₸ (за 1 человека, 7 ночей, эконом)
+export const COUNTRIES_DATA = [
+  {
+    id: 'uae',
+    name: 'ОАЭ (Дубай / Абу-Даби)',
+    image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1000&q=80',
+    description: 'Современные мегаполисы, небоскребы, роскошные пляжи и шопинг мирового уровня.',
+    flightFrom: 'Астана (NQZ) — Прямой рейс (Air Astana / FlyArystan, ~4.5 часа)',
+    hotels: [
+      {
+        id: 'uae-1',
+        name: 'Burj Al Arab Jumeirah 5*',
+        category: '5',
+        meal: 'bb',
+        beach: 'Первая линия, частный песчаный пляж',
+        image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80',
+        description: 'Легендарный отель-парус с роскошными люксами, вертолетной площадкой и непревзойденным сервисом.',
+        amenities: {
+          sport: 'Фитнес-центр, йога на пляже, теннисный корт, волейбол',
+          restaurants: '7 ресторанов изысканной кухни (включая подводный), 4 бара',
+          children: 'Детский клуб Sinbad’s, анимация, детское меню, бассейн с горками',
+          tourIncludes: ['Авиаперелет Астана - Дубай - Астана', 'Индивидуальный VIP-трансфер на Rolls-Royce', 'Завтраки', 'Медицинская страховка 100 000$', 'Консьерж-сервис 24/7'],
+        },
+        rooms: [
+          { type: 'Deluxe Suite (1 спальня с видом на море)', priceBase: 450000 },
+          { type: 'Panoramic View Suite (панорамные окна)', priceBase: 620000 },
+          { type: 'Presidential Two-Bedroom Suite', priceBase: 950000 },
+        ],
+      },
+      {
+        id: 'uae-2',
+        name: 'Atlantis, The Palm 5*',
+        category: '5',
+        meal: 'bb',
+        beach: 'Первая линия, пляж Palm Island',
+        image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+        description: 'Знаменитый курорт на искусственном острове Пальма Джумейра с аквапарком Aquaventure.',
+        amenities: {
+          sport: 'Дайвинг, аквапарк, тренажерный зал, водные виды спорта',
+          restaurants: '29 ресторанов и баров мирового класса',
+          children: 'Клуб Aquaventure, детская игровая площадка, бассейн, няня',
+          tourIncludes: ['Прямой перелет из Астаны', 'Групповой трансфер аэропорт-отель-аэропорт', 'Завтраки', 'Страховка', 'Безлимитный вход в аквапарк Aquaventure'],
+        },
+        rooms: [
+          { type: 'Ocean King Room (вид на море)', priceBase: 280000 },
+          { type: 'Palm Pool Club Room', priceBase: 340000 },
+          { type: 'Two Bedroom Family Suite', priceBase: 580000 },
+        ],
+      },
+      {
+        id: 'uae-3',
+        name: 'Rixos The Palm Dubai Hotel & Suites 5*',
+        category: '5',
+        meal: 'uai',
+        beach: 'Первая линия, частный пляж',
+        image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80',
+        description: 'Премиальный отель, работающий по системе «Ультра Всё Включено» на восточной полусфере Пальмы.',
+        amenities: {
+          sport: 'Теннис, фитнес-центр Exclusive Sports Club, аквааэробика',
+          restaurants: 'A la carte рестораны турецкой и итальянской кухни, пляжные бары',
+          children: 'Rixy Kids Club, детская дискотека, мастер-классы',
+          tourIncludes: ['Перелет из Астаны', 'Трансфер', 'Концепция UAI (Ультра всё включено)', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Deluxe Room Garden View', priceBase: 310000 },
+          { type: 'Deluxe Sea View Room', priceBase: 390000 },
+          { type: 'Two Bedroom Family Suite', priceBase: 650000 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'turkey',
+    name: 'Турция (Анталийское побережье / Кемер / Сиде)',
+    image: 'https://images.unsplash.com/photo-1524231757913-215fce3a9b5a?auto=format&fit=crop&w=1000&q=80',
+    description: 'Идеальный пляжный отдых, сосновые леса Таврских гор и развитая инфраструктура All Inclusive.',
+    flightFrom: 'Астана (NQZ) — Прямой чартер / Регулярный рейс (Air Astana / SCAT, ~5 часов)',
+    hotels: [
+      {
+        id: 'turkey-1',
+        name: 'Maxx Royal Kemer Resort 5*',
+        category: '5',
+        meal: 'uai',
+        beach: 'Первая линия, песчано-галечный пляж, пирс',
+        image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80',
+        description: 'Элитный курорт среди сосновых холмов Кемера с роскошными виллами и безупречным сервисом.',
+        amenities: {
+          sport: 'Профессиональный теннисный корт, футбол, водные лыжи, фитнес',
+          restaurants: '5 основных и тематических ресторанов, кондитерская, 11 баров',
+          children: 'Maxxi Land (детский клуб для всех возрастов), лунапарк, игры',
+          tourIncludes: ['Перелет Астана - Анталья - Астана', 'Индивидуальный трансфер', 'Ultra All Inclusive', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Suite Main Building (с видом на море)', priceBase: 260000 },
+          { type: 'Terrace Suite (с джакузи на террасе)', priceBase: 350000 },
+          { type: 'Laguna Duble Suite', priceBase: 490000 },
+        ],
+      },
+      {
+        id: 'turkey-2',
+        name: 'Regnum Carya Belek 5*',
+        category: '5',
+        meal: 'ai',
+        beach: 'Первая линия, собственный белый песчаный пляж',
+        image: 'https://images.unsplash.com/photo-1561501900-3701fa6a0864?auto=format&fit=crop&w=800&q=80',
+        description: 'Один из лучших гольф-отелей Белека с аквапарком и площадками мирового уровня.',
+        amenities: {
+          sport: 'Гольф-поле Carya Golf Club, футбол, теннис, фитнес',
+          restaurants: 'Шведский стол + 7 ресторанов A la carte',
+          children: 'Dino Land (парк динозавров), детская академия спорта',
+          tourIncludes: ['Прямой перелет из Астаны', 'Трансфер', 'Концепция Luxury AI', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Luxury Room Golf View', priceBase: 220000 },
+          { type: 'Luxury Room Sea View', priceBase: 290000 },
+          { type: 'Family Roof Suite', priceBase: 420000 },
+        ],
+      },
+      {
+        id: 'turkey-3',
+        name: 'Rixos Sungate Kemer 5*',
+        category: '5',
+        meal: 'uai',
+        beach: 'Первая линия, протяженный галечный пляж',
+        image: 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=800&q=80',
+        description: 'Огромный комплекс для активного семейного и молодежного отдыха в живописной бухте.',
+        amenities: {
+          sport: 'Боулинг, теннис, аквапарк, кроссфит, водные мотоциклы',
+          restaurants: '10 ресторанов, снэк-бары, ночной клуб',
+          children: 'Rixy Kids Club, бассейн с водными горками, батуты',
+          tourIncludes: ['Прямой перелет из Астаны', 'Трансфер', 'UAI', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Standard Room Garden View', priceBase: 150000 },
+          { type: 'Family Room Sea View', priceBase: 210000 },
+          { type: 'Grand Suite', priceBase: 340000 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'thailand',
+    name: 'Таиланд (Пхукет / Паттайя / Самуи)',
+    image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1000&q=80',
+    description: 'Тропический рай с бирюзовыми лагунами, буддийскими храмами и экзотической кухней.',
+    flightFrom: 'Астана (NQZ) — Прямой рейс / С пересадкой в Алматы (Air Astana, ~7.5 часов)',
+    hotels: [
+      {
+        id: 'thailand-1',
+        name: 'Rosewood Phuket 5*',
+        category: '5',
+        meal: 'bb',
+        beach: 'Первая линия, пляж Изумрудной бухты Патонг',
+        image: 'https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&w=800&q=80',
+        description: 'Уединенный роскошный курорт на берегу Андаманского моря с тропическим садом и виллами.',
+        amenities: {
+          sport: 'Йога на закате, фитнес-центр, каякинг, снорклинг',
+          restaurants: '4 тайских и европейских ресторана премиум-класса',
+          children: 'Rosewood Explorers детский клуб, мастер-классы по ремеслам',
+          tourIncludes: ['Перелет Астана - Пхукет - Астана', 'Индивидуальный трансфер', 'Завтраки (BB)', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Ocean Pool Pavilion (вилла с бассейном)', priceBase: 320000 },
+          { type: 'Beachfront Pool Villa', priceBase: 480000 },
+          { type: 'Two Bedroom Sunset Villa', priceBase: 780000 },
+        ],
+      },
+      {
+        id: 'thailand-2',
+        name: 'Centara Grand Beach Resort Phuket 5*',
+        category: '5',
+        meal: 'bb',
+        beach: 'Первая линия, пляж Карон',
+        image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+        description: 'Популярный курорт в колониальном стиле с аквапарком прямо на пляже Карон.',
+        amenities: {
+          sport: 'Водный парк с ленивой рекой, теннис, тренажерный зал',
+          restaurants: '5 ресторанов и баров у бассейна',
+          children: 'Camp Safari (детский клуб), игровая комната',
+          tourIncludes: ['Перелет из Астаны', 'Трансфер', 'Завтраки', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Deluxe Ocean View', priceBase: 180000 },
+          { type: 'Luxury Ocean Suite', priceBase: 250000 },
+          { type: 'Pool Suite Beachfront', priceBase: 380000 },
+        ],
+      },
+      {
+        id: 'thailand-3',
+        name: 'Amari Phuket 4*',
+        category: '4',
+        meal: 'bb',
+        beach: 'Первая линия, живописный южный мыс Патонга',
+        image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80',
+        description: 'Отель с панорамными видами на залив Патонг и собственным коралловым рифом.',
+        amenities: {
+          sport: 'Фитнес-центр FIT, открытые бассейны, дайвинг-центр',
+          restaurants: 'Ресторан Rim Talay, тайская и итальянская кухни',
+          children: 'Детский клуб, игровая зона',
+          tourIncludes: ['Перелет из Астаны', 'Трансфер', 'Завтраки', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Superior Ocean Facing Room', priceBase: 130000 },
+          { type: 'Deluxe Ocean View', priceBase: 165000 },
+          { type: 'One Bedroom Suite Club Access', priceBase: 240000 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'egypt',
+    name: 'Египет (Шарм-эль-Шейх / Хургада)',
+    image: 'https://images.unsplash.com/photo-1539650116574-8efeb43e2750?auto=format&fit=crop&w=1000&q=80',
+    description: 'Красное море с богатейшим подводным миром, коралловыми рифами и круглогодичным солнцем.',
+    flightFrom: 'Астана (NQZ) — Прямой чартерный рейс (~6 часов)',
+    hotels: [
+      {
+        id: 'egypt-1',
+        name: 'Rixos Sharm El Sheikh 5*',
+        category: '5',
+        meal: 'uai',
+        beach: 'Первая линия, коралловый риф с понтоном',
+        image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80',
+        description: 'Премиальный отель только для взрослых с концепцией «Ультра Всё Включено» в бухте Набк.',
+        amenities: {
+          sport: 'Дайвинг, теннисные корты, пляжный волейбол, фитнес',
+          restaurants: '7 ресторанов A la carte (итальянский, японский, индийский)',
+          children: 'Отель работает для гостей старше 16 лет',
+          tourIncludes: ['Перелет Астана - Шарм-эль-Шейх - Астана', 'Трансфер', 'Ultra All Inclusive', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Superior Room Garden View', priceBase: 170000 },
+          { type: 'Deluxe Sea View Room', priceBase: 220000 },
+          { type: 'Junior Suite with Jacuzzi', priceBase: 310000 },
+        ],
+      },
+      {
+        id: 'egypt-2',
+        name: 'Sunrise Arabian Beach Resort 5*',
+        category: '5',
+        meal: 'ai',
+        beach: 'Первая линия, залив Шаркс-Бей',
+        image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+        description: 'Роскошный курорт в стиле арабского дворца с великолепным рифом для снорклинга.',
+        amenities: {
+          sport: 'Дайвинг-центр, тренажерный зал, водное поло',
+          restaurants: '6 ресторанов международной кухни',
+          children: 'Kids Planet клуб, детская площадка и анимация',
+          tourIncludes: ['Прямой перелет из Астаны', 'Трансфер', 'All Inclusive', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Superior Room Partial Sea View', priceBase: 155000 },
+          { type: 'Deluxe Swim-Up Room', priceBase: 210000 },
+          { type: 'Royal Suite', priceBase: 350000 },
+        ],
+      },
+      {
+        id: 'egypt-3',
+        name: 'Jaz Aquamarine Resort Hurghada 5*',
+        category: '5',
+        meal: 'ai',
+        beach: 'Первая линия, песчаный пляж с лагуной',
+        image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80',
+        description: 'Семейный рай в Хургаде с 20 открытыми бассейнами и собственным аквапарком.',
+        amenities: {
+          sport: 'Аквапарк с 22 горками, теннис, виндсерфинг',
+          restaurants: '6 ресторанов шведского стола и а-ля карт',
+          children: 'Детский клуб, игровые площадки, мини-диско',
+          tourIncludes: ['Перелет из Астаны', 'Трансфер', 'All Inclusive', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Superior Room Garden View', priceBase: 130000 },
+          { type: 'Family Room Pool View', priceBase: 175000 },
+          { type: 'Deluxe Suite Sea View', priceBase: 240000 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'maldives',
+    name: 'Мальдивы (Атолы Северный Мале, Ари, Баа)',
+    image: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=1000&q=80',
+    description: 'Белоснежные песчаные косы, бирюзовые атоллы, бунгало на воде и уединенный релакс.',
+    flightFrom: 'Астана (NQZ) — С пересадкой в Дубае / Дохе (Air Astana / Qatar Airways, ~9 часов)',
+    hotels: [
+      {
+        id: 'maldives-1',
+        name: 'Soneva Fushi 5* Luxury',
+        category: '5',
+        meal: 'hb',
+        beach: 'Частный остров-курорт, пляж премиум-класса',
+        image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80',
+        description: 'Экологический ультра-роскошный курорт на необитаемом острове с виллами в джунглях и над водой.',
+        amenities: {
+          sport: 'Дайвинг, обсерватория, снорклинг с биологами, теннис',
+          restaurants: '9 ресторанов концепции «органик» и винотека',
+          children: 'The Den (один из лучших детских клубов в мире), кинотеатр под открытым небом',
+          tourIncludes: ['Перелет Астана - Мале - Астана', 'Трансфер на гидросамолете', 'Завтраки и ужины (HB)', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Crusoé Villa with Pool (в джунглях)', priceBase: 750000 },
+          { type: 'Water Reserve Villa with Slide', priceBase: 1100000 },
+          { type: 'Two Bedroom Sunset Reserve', priceBase: 1650000 },
+        ],
+      },
+      {
+        id: 'maldives-2',
+        name: 'Kurumba Maldives 5*',
+        category: '5',
+        meal: 'bb',
+        beach: 'Первая линия, живописный домашний риф',
+        image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+        description: 'Первый курорт на Мальдивах всего в 10 минутах на катере от столицы Мале.',
+        amenities: {
+          sport: 'Теннисные корты, тренажерный зал, каякинг, парусный спорт',
+          restaurants: '8 ресторанов мировой кухни, живая музыка',
+          children: 'Majaa Kids Club, детские развлекательные программы',
+          tourIncludes: ['Перелет из Астаны', 'Трансфер на скоростном катере', 'Завтраки', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Superior Beach Bungalow', priceBase: 340000 },
+          { type: 'Deluxe Pool Villa', priceBase: 520000 },
+          { type: 'Royal Kurumba Residence', priceBase: 890000 },
+        ],
+      },
+      {
+        id: 'maldives-3',
+        name: 'Bandos Maldives 4*',
+        category: '4',
+        meal: 'bb',
+        beach: 'Первая линия, лазурная лагуна',
+        image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80',
+        description: 'Уютный остров-курорт с пышной растительностью и отличными возможностями для дайвинга.',
+        amenities: {
+          sport: 'Дайвинг-центр PADI, фитнес, сквош, настольный теннис',
+          restaurants: '4 ресторана, 3 бара',
+          children: 'Kokko Club детский клуб, детская площадка',
+          tourIncludes: ['Перелет из Астаны', 'Трансфер на катере', 'Завтраки', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Standard Room', priceBase: 240000 },
+          { type: 'Deluxe Beach Villa', priceBase: 380000 },
+          { type: 'Jacuzzi Beach Villa', priceBase: 490000 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'vietnam',
+    name: 'Вьетнам (Фукуок / Нячанг / Дананг)',
+    image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=1000&q=80',
+    description: 'Живописные бухты, песчаные пляжи Южно-Китайского моря и богатая азиатская культура.',
+    flightFrom: 'Астана (NQZ) — Регулярный рейс с пересадкой (~7.5 часов)',
+    hotels: [
+      {
+        id: 'vietnam-1',
+        name: 'InterContinental Phu Quoc Long Beach Resort 5*',
+        category: '5',
+        meal: 'bb',
+        beach: 'Первая линия, золотой песчаный пляж Лонг-Бич',
+        image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80',
+        description: 'Роскошный курорт на жемчужном острове Фукуок с панорамными барами на крыше и SPA-центром.',
+        amenities: {
+          sport: 'Йога на пляже, фитнес 24/7, байдарки, бассейны',
+          restaurants: '4 ресторана и бара (включая бар INK 360 на 19 этаже)',
+          children: 'Planet Trekkers детский клуб, мастер-классы',
+          tourIncludes: ['Перелет Астана - Фукуок - Астана', 'Трансфер', 'Завтраки', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Classic Ocean View Room', priceBase: 160000 },
+          { type: 'Resort Suite with Balcony', priceBase: 230000 },
+          { type: 'Two Bedroom Villa with Pool', priceBase: 410000 },
+        ],
+      },
+      {
+        id: 'vietnam-2',
+        name: 'JW Marriott Phu Quoc Emerald Bay Resort 5*',
+        category: '5',
+        meal: 'bb',
+        beach: 'Первая линия, пляж Кхем',
+        image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+        description: 'Уникальный отель, спроектированный архитектором Биллом Бенсли в стиле фантастического университета.',
+        amenities: {
+          sport: 'Водные виды спорта, фитнес, велосипедные прогулки',
+          restaurants: '3 ресторана изысканной кухни и бары',
+          children: 'Детский клуб, игровая зона',
+          tourIncludes: ['Перелет из Астаны', 'Трансфер', 'Завтраки', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Emerald Bay View Room', priceBase: 210000 },
+          { type: 'Deluxe Turquoise Suite', priceBase: 310000 },
+          { type: 'One Bedroom Villa', priceBase: 550000 },
+        ],
+      },
+      {
+        id: 'vietnam-3',
+        name: 'Vinpearl Resort & Spa Nha Trang Bay 5*',
+        category: '5',
+        meal: 'bb',
+        beach: 'Первая линия, остров Хон Че',
+        image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80',
+        description: 'Курорт с видом на один из красивейших заливов мира и доступом в парк VinWonders.',
+        amenities: {
+          sport: 'Тренажерный зал, аквапарк VinWonders рядом, теннис',
+          restaurants: 'Рестораны шведского стола и гриль-бары',
+          children: 'Kids Club, детский парк аттракционов',
+          tourIncludes: ['Перелет из Астаны', 'Трансфер', 'Завтраки', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Deluxe Ocean View', priceBase: 125000 },
+          { type: 'Executive Suite', priceBase: 190000 },
+          { type: 'Three Bedroom Villa', priceBase: 380000 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'bali',
+    name: 'Индонезия (Бали / Убуд / Нуса-Дуа)',
+    image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1000&q=80',
+    description: 'Остров богов: рисовые террасы, древние храмы, серфинг и роскошные виллы в джунглях.',
+    flightFrom: 'Астана (NQZ) — Перелет с пересадкой (Emirates / Qatar / Air Astana, ~10 часов)',
+    hotels: [
+      {
+        id: 'bali-1',
+        name: 'The Mulia Bali 5*',
+        category: '5',
+        meal: 'bb',
+        beach: 'Первая линия, белый пляж Нуса-Дуа',
+        image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80',
+        description: 'Великолепный курорт на побережье Нуса-Дуа с известными бассейнами с бирюзовой водой.',
+        amenities: {
+          sport: 'Фитнес-центр, йога, пилатес, аквааэробика',
+          restaurants: '5 ресторанов и баров премиум-класса',
+          children: 'Mulia Kidz Club, игровая площадка',
+          tourIncludes: ['Перелет Астана - Денпасар - Астана', 'Индивидуальный трансфер', 'Завтраки', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Mulia Grandeur Room', priceBase: 240000 },
+          { type: 'Signature Ocean Court', priceBase: 320000 },
+          { type: 'Mulia Villa with Private Pool', priceBase: 580000 },
+        ],
+      },
+      {
+        id: 'bali-2',
+        name: 'Capella Ubud 5*',
+        category: '5',
+        meal: 'bb',
+        beach: 'В самом сердце тропических джунглей Убуда',
+        image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+        description: 'Уникальный палаточный лагерь класса люкс среди девственных дождевых лесов и рисовых террас.',
+        amenities: {
+          sport: 'Треккинг в джунглях, йога-павильон, открытый бассейн с соленой водой',
+          restaurants: 'Mads Lange и Auriga Wellness рестораны',
+          children: 'Программа для подростков и детей в стиле эко-исследователей',
+          tourIncludes: ['Перелет из Астаны', 'Трансфер', 'Завтраки', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Terrace Tent with Saltwater Pool', priceBase: 390000 },
+          { type: 'Valley Tent with Jacuzzi', priceBase: 490000 },
+          { type: 'Two Bedroom Camp', priceBase: 780000 },
+        ],
+      },
+      {
+        id: 'bali-3',
+        name: 'AYANA Resort Bali 5*',
+        category: '5',
+        meal: 'bb',
+        beach: 'Первая линия, утесы Джимбарана с видом на океан',
+        image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80',
+        description: 'Легендарный курорт с культовым баром Rock Bar на скале и множеством бассейнов.',
+        amenities: {
+          sport: 'Гольф-поле, 12 бассейнов, теннис, фитнес',
+          restaurants: '19 ресторанов и баров (включая Rock Bar)',
+          children: 'Kids Club, детский бассейн с горками',
+          tourIncludes: ['Перелет из Астаны', 'Трансфер', 'Завтраки', 'Страховка'],
+        },
+        rooms: [
+          { type: 'Resort View Room', priceBase: 190000 },
+          { type: 'Ocean View Room', priceBase: 260000 },
+          { type: 'Cliff Villa with Pool', priceBase: 480000 },
+        ],
+      },
+    ],
+  },
+];
+
+export const ALL_HOTELS = COUNTRIES_DATA.flatMap((c) => c.hotels.map((h) => ({ ...h, countryId: c.id })));
+export const minPrice = (h) => Math.min(...h.rooms.map((r) => r.priceBase));
+export const countryMin = (c) => Math.min(...c.hotels.map(minPrice));
