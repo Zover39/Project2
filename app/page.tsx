@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Level from "@/components/Level";
 import ContactForm from "@/components/ContactForm";
 
@@ -21,20 +22,13 @@ const faq = [
 export default function Home() {
   return (
     <>
-      <header className="top">
-        <a href="#" className="logo">Отвес</a>
-        <nav aria-label="Разделы">
-          <a href="#services">Услуги</a><a href="#process">Как работаем</a><a href="#faq">Вопросы</a>
-          <a href="#contact" className="btn-s">Оставить заявку</a>
-        </nav>
-      </header>
 
       <main>
         <section className="hero">
           <h1>Ремонт, который<br />сдаётся по уровню</h1>
           <p className="lead">Фиксированная смета и срок в договоре. Бесплатный замер за 2 дня.</p>
           <Level />
-          <a href="#contact" className="btn">Рассчитать ремонт</a>
+          <Link href="/calculator" className="btn">Рассчитать ремонт</Link>
         </section>
 
         <section id="services" className="sec">
@@ -67,8 +61,6 @@ export default function Home() {
           <ContactForm />
         </section>
       </main>
-
-      <footer><span>© 2026 Отвес</span><span>Астана · пн–сб 9:00–20:00</span></footer>
     </>
   );
 }
