@@ -1,9 +1,13 @@
-import { U } from '../data/countries';
-
-// Фото с Unsplash; если не загрузилось — остаётся цветной фон
-export default function Img({ id, alt }) {
+// Фото; если не загрузилось — остаётся градиентный фон контейнера
+export default function Img({ src, alt, className = 'w-full h-full object-cover' }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={U(id)} alt={alt} loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      className={className}
+      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+    />
   );
 }
