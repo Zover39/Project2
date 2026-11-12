@@ -5,7 +5,7 @@ import HotelListingCard from './HotelListingCard';
 import GuestSelector from './GuestSelector';
 import { HotelComparison, TourFinder } from './HotelTools';
 import CountryFlightMap from './CountryFlightMap';
-import { buildFavoritesCsv } from '../../utils/csv';
+import { buildBookingsCsv, buildFavoritesCsv } from '../../utils/csv';
 
 export default function UserWorkspace({ app }) {
   const today = new Date();
@@ -24,20 +24,28 @@ export default function UserWorkspace({ app }) {
     favoriteNotes, updateFavoriteNote, recentlyViewedHotels,
     compareIds, toggleCompare, cancelBooking
   } = app;
+  const currentUserBookings = bookings.filter(booking => booking.user.id === currentUser.id);
 
-  const downloadFavorites = () => {
-    const blob = new Blob([buildFavoritesCsv(favoriteHotels, favoriteNotes)], {
-      type: 'text/csv;charset=utf-8'
-    });
+  const downloadCsv = (content, fileName) => {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    const date = new Date().toISOString().slice(0, 10);
     link.href = url;
-    link.download = `astana-travel-favorites-${date}.csv`;
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+  };
+
+  const downloadFavorites = () => {
+    const date = new Date().toISOString().slice(0, 10);
+    downloadCsv(buildFavoritesCsv(favoriteHotels, favoriteNotes), `astana-travel-favorites-${date}.csv`);
+  };
+
+  const downloadBookings = () => {
+    const date = new Date().toISOString().slice(0, 10);
+    downloadCsv(buildBookingsCsv(currentUserBookings), `astana-travel-bookings-${date}.csv`);
   };
 
   return (
@@ -412,15 +420,27 @@ export default function UserWorkspace({ app }) {
                   </div>
                 </div>
 
-                <h3 className="text-xl font-bold mt-8">Мои демо-бронирования</h3>
-                {bookings.filter(b=>b.user.id === currentUser.id).length === 0 ? (
+                <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="text-xl font-bold">Мои демо-бронирования</h3>
+                  {currentUserBookings.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={downloadBookings}
+                      className="inline-flex items-center gap-2 text-sm font-bold text-indigo-600 transition hover:text-indigo-700 dark:text-indigo-400"
+                    >
+                      <Download className="h-4 w-4" aria-hidden="true" />
+                      Скачать заявки
+                    </button>
+                  )}
+                </div>
+                {currentUserBookings.length === 0 ? (
                   <div className="text-center py-10 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
                     <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                     <p className="text-slate-500 font-medium">У вас пока нет демо-заявок</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {bookings.filter(b=>b.user.id === currentUser.id).map(b => (
+                    {currentUserBookings.map(b => (
                       <div key={b.id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm">
                         <div className="flex items-center gap-4">
                           <img src={b.hotel.image} className="w-20 h-20 rounded-xl object-cover" alt="Hotel" />
