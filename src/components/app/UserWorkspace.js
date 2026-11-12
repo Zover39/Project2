@@ -1,10 +1,11 @@
 import {
-  AlertTriangle, Bot, CalendarDays, Filter, Heart, MapPin, Search, ShoppingBag, Sparkles, X, Zap
+  AlertTriangle, Bot, CalendarDays, Download, Filter, Heart, MapPin, Search, ShoppingBag, Sparkles, X, Zap
 } from 'lucide-react';
 import HotelListingCard from './HotelListingCard';
 import GuestSelector from './GuestSelector';
 import { HotelComparison, TourFinder } from './HotelTools';
 import CountryFlightMap from './CountryFlightMap';
+import { buildFavoritesCsv } from '../../utils/csv';
 
 export default function UserWorkspace({ app }) {
   const today = new Date();
@@ -23,6 +24,21 @@ export default function UserWorkspace({ app }) {
     favoriteNotes, updateFavoriteNote, recentlyViewedHotels,
     compareIds, toggleCompare, cancelBooking
   } = app;
+
+  const downloadFavorites = () => {
+    const blob = new Blob([buildFavoritesCsv(favoriteHotels, favoriteNotes)], {
+      type: 'text/csv;charset=utf-8'
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const date = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.download = `astana-travel-favorites-${date}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <>
@@ -281,9 +297,19 @@ export default function UserWorkspace({ app }) {
                     <p className="text-sm text-slate-500 mt-1">Сохранённые вами отели: {favoriteHotels.length}</p>
                   </div>
                   {favoriteHotels.length > 0 && (
-                    <button onClick={clearFavorites} className="text-sm font-bold text-rose-500 hover:text-rose-600 transition">
-                      Очистить избранное
-                    </button>
+                    <div className="flex flex-wrap items-center gap-4">
+                      <button
+                        type="button"
+                        onClick={downloadFavorites}
+                        className="inline-flex items-center gap-2 text-sm font-bold text-indigo-600 transition hover:text-indigo-700 dark:text-indigo-400"
+                      >
+                        <Download className="h-4 w-4" aria-hidden="true" />
+                        Скачать список
+                      </button>
+                      <button onClick={clearFavorites} className="text-sm font-bold text-rose-500 hover:text-rose-600 transition">
+                        Очистить избранное
+                      </button>
+                    </div>
                   )}
                 </div>
                 {favoriteHotels.length === 0 ? (
