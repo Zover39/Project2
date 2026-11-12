@@ -16,7 +16,7 @@ export default function HotelListingCard({
           onSelect(hotel);
         }
       }}
-      className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl transition group relative flex flex-col cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+      className="hotel-card-motion bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl transition group relative flex flex-col cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
     >
       <div className="relative h-56 overflow-hidden">
         <img src={hotel.image} className="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt={hotel.name} />
@@ -38,7 +38,7 @@ export default function HotelListingCard({
             onClick={event => { event.stopPropagation(); onToggleFavorite(hotel); }}
             aria-label={isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}
             aria-pressed={isFavorite}
-            className="rounded-xl bg-white/80 p-2 text-rose-500 shadow-sm backdrop-blur transition hover:scale-110 dark:bg-slate-900/80"
+            className="favorite-motion rounded-xl bg-white/80 p-2 text-rose-500 shadow-sm backdrop-blur transition hover:scale-110 dark:bg-slate-900/80"
           >
             <Heart className={`h-5 w-5 ${isFavorite ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
           </button>

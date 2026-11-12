@@ -29,7 +29,7 @@ export default function UserWorkspace({ app }) {
             {/* 1. КАТАЛОГ И ФИЛЬТРЫ */}
             {activeTab === 'catalog' && (
               <div className="space-y-6 animate-in fade-in duration-500">
-                <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950 via-indigo-800 to-indigo-700 p-5 text-white shadow-xl sm:p-8">
+                <section className="motion-hero overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950 via-indigo-800 to-indigo-700 p-5 text-white shadow-xl sm:p-8">
                   <div className="mx-auto max-w-4xl">
                     <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-indigo-200">ASTANA TRAVEL · КАТАЛОГ ОТЕЛЕЙ</p>
                     <h2 className="text-3xl font-black sm:text-4xl">Найдите свой отдых</h2>
