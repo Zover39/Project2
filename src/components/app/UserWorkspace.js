@@ -1,6 +1,7 @@
 import {
-  AlertTriangle, Bot, CalendarDays, Download, Filter, Heart, MapPin, Search, ShoppingBag, Sparkles, X, Zap
+  Bot, CalendarDays, Download, Filter, Heart, MapPin, Search, Sparkles, X, Zap
 } from 'lucide-react';
+import AccountWorkspace from './AccountWorkspace';
 import HotelListingCard from './HotelListingCard';
 import GuestSelector from './GuestSelector';
 import { HotelComparison, TourFinder } from './HotelTools';
@@ -12,7 +13,7 @@ export default function UserWorkspace({ app }) {
   const todayValue = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const {
     activeTab, hotels, tinderIndex, setTinderIndex, formatMoney, toggleFav,
-    pushToast, currentUser, bookings, search, setSearch, filterCountry,
+    pushToast, search, setSearch, filterCountry,
     setFilterCountry, filterCity, setFilterCity, filterMeal, setFilterMeal,
     maxPrice, setMaxPrice, sortOrder, setSortOrder, resetFilters,
     quickFilters, setQuickFilters,
@@ -20,11 +21,10 @@ export default function UserWorkspace({ app }) {
     checkOutDate, setCheckOutDate, adults, children, updateGuestCounts,
     appliedDestination, setAppliedDestination, handleCatalogSearch,
     COUNTRIES, CITIES, MEAL_TYPES, filteredCatalog, favoriteHotels,
-    favorites, openHotel, tourConfig, clearFavorites, setCheckoutStep,
+    favorites, openHotel, clearFavorites,
     favoriteNotes, updateFavoriteNote, recentlyViewedHotels,
-    compareIds, toggleCompare, cancelBooking
+    compareIds, toggleCompare
   } = app;
-  const currentUserBookings = bookings.filter(booking => booking.user.id === currentUser.id);
 
   const downloadCsv = (content, fileName) => {
     const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
@@ -43,9 +43,8 @@ export default function UserWorkspace({ app }) {
     downloadCsv(buildFavoritesCsv(favoriteHotels, favoriteNotes), `astana-travel-favorites-${date}.csv`);
   };
 
-  const downloadBookings = () => {
-    const date = new Date().toISOString().slice(0, 10);
-    downloadCsv(buildBookingsCsv(currentUserBookings), `astana-travel-bookings-${date}.csv`);
+  const downloadBookings = (userBookings, fileName) => {
+    downloadCsv(buildBookingsCsv(userBookings), fileName);
   };
 
   return (
@@ -403,68 +402,7 @@ export default function UserWorkspace({ app }) {
 
             {/* 4. КАБИНЕТ (ПРОФИЛЬ & ЛОЯЛЬНОСТЬ) */}
             {activeTab === 'profile' && (
-              <div className="space-y-6 max-w-4xl mx-auto animate-in fade-in">
-                {currentUser.isBanned && (
-                  <div className="bg-rose-500 text-white p-4 rounded-2xl font-bold flex items-center gap-3">
-                    <AlertTriangle className="w-6 h-6"/> Ваш аккаунт ограничен модератором. Вы не можете оставлять отзывы.
-                  </div>
-                )}
-                <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 flex justify-between items-center shadow-sm">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-2xl font-black text-indigo-600 dark:text-indigo-400">{currentUser.name[0]}</div>
-                    <div><h2 className="text-2xl font-bold">{currentUser.name}</h2><p className="text-sm text-slate-500 dark:text-slate-400">{currentUser.phone}</p></div>
-                  </div>
-                  <div className="text-right">
-                    <span className="block text-xs uppercase font-bold text-amber-500">Статус лояльности</span>
-                    <span className="text-2xl font-black text-slate-900 dark:text-white">{currentUser.status}</span>
-                  </div>
-                </div>
-
-                <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="text-xl font-bold">Мои демо-бронирования</h3>
-                  {currentUserBookings.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={downloadBookings}
-                      className="inline-flex items-center gap-2 text-sm font-bold text-indigo-600 transition hover:text-indigo-700 dark:text-indigo-400"
-                    >
-                      <Download className="h-4 w-4" aria-hidden="true" />
-                      Скачать заявки
-                    </button>
-                  )}
-                </div>
-                {currentUserBookings.length === 0 ? (
-                  <div className="text-center py-10 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
-                    <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-500 font-medium">У вас пока нет демо-заявок</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {currentUserBookings.map(b => (
-                      <div key={b.id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm">
-                        <div className="flex items-center gap-4">
-                          <img src={b.hotel.image} className="w-20 h-20 rounded-xl object-cover" alt="Hotel" />
-                          <div>
-                            <h4 className="font-bold text-lg leading-tight">{b.hotel.name}</h4>
-                            <p className="text-xs text-slate-500 mt-1">Номер: {b.id} | Создано: {b.date}</p>
-                            <p className="text-xs text-slate-500 mt-1">{b.trip?.pax || 2} гостей · {b.trip?.nights || 7} ночей</p>
-                            <p className="mt-1 text-xs font-bold text-amber-700 dark:text-amber-400">Демо-бронирование — оплата не производилась</p>
-                          </div>
-                        </div>
-                        <div className="text-right w-full sm:w-auto border-t sm:border-0 pt-3 sm:pt-0">
-                          <p className="font-black text-xl text-indigo-600 dark:text-indigo-400">{formatMoney(b.price)} ₸</p>
-                          <span className={`text-[10px] px-2 py-1 rounded-md font-bold mt-1 inline-block ${b.status === 'cancelled_demo' ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400'}`}>
-                            {b.status === 'cancelled_demo' ? 'Отменено' : 'Демо подтверждено'}
-                          </span>
-                          {b.status !== 'cancelled_demo' && (
-                            <button onClick={() => cancelBooking(b.id)} className="ml-2 mt-2 text-xs font-bold text-rose-600 hover:underline">Отменить демо-бронирование</button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <AccountWorkspace app={{ ...app, downloadBookings }} />
             )}
     </>
   );

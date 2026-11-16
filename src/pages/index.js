@@ -6,7 +6,7 @@ import UserWorkspace from '../components/app/UserWorkspace';
 import AdminWorkspace from '../components/app/AdminWorkspace';
 import HotelBookingModal from '../components/app/HotelBookingModal';
 import Head from 'next/head';
-import { Moon, Plane, ShieldAlert, Users, Sun, ShoppingBag, CheckCircle2, Heart } from 'lucide-react';
+import { Moon, Plane, ShieldAlert, Users, Sun, User, CheckCircle2, Heart } from 'lucide-react';
 
 const TAB_PATHS = {
   catalog: '/catalog',
@@ -54,7 +54,11 @@ export default function AstanaTravelApp() {
   const [bookings, setBookings] = useState([]);
   const [logs, setLogs] = useState([]);
   const [users, setUsers] = useState(INITIAL_USERS);
-  const currentUser = users.find(user => user.id === INITIAL_USERS[0].id) || INITIAL_USERS[0];
+  const [currentUserId, setCurrentUserId] = useState(INITIAL_USERS[0].id);
+  const touristUsers = users.filter(user => user.status !== 'Staff');
+  const currentUser = currentUserId
+    ? users.find(user => user.id === currentUserId) || null
+    : null;
 
   // -- ФИЛЬТРЫ КАТАЛОГА --
   const [search, setSearch] = useState('');
@@ -115,7 +119,23 @@ export default function AstanaTravelApp() {
     setHotels(initialHotels);
     localStorage.setItem('at_hotels_v2', JSON.stringify(initialHotels));
     localStorage.setItem('at_hotels_catalog_version', HOTEL_CATALOG_VERSION);
-    if (sUsers) setUsers(JSON.parse(sUsers));
+    const loadedUsers = sUsers ? JSON.parse(sUsers) : INITIAL_USERS;
+    setUsers(loadedUsers);
+    const sCurrentUserId = localStorage.getItem('at_current_user_id');
+    const touristList = loadedUsers.filter(user => user.status !== 'Staff');
+    if (sCurrentUserId === null) {
+      const defaultId = touristList[0]?.id || '';
+      setCurrentUserId(defaultId);
+      localStorage.setItem('at_current_user_id', defaultId);
+    } else if (sCurrentUserId === '') {
+      setCurrentUserId('');
+    } else if (touristList.some(user => user.id === sCurrentUserId)) {
+      setCurrentUserId(sCurrentUserId);
+    } else {
+      const fallbackId = touristList[0]?.id || '';
+      setCurrentUserId(fallbackId);
+      localStorage.setItem('at_current_user_id', fallbackId);
+    }
     if (sFav) {
       const savedFavorites = JSON.parse(sFav).filter(id => validHotelIds.has(id));
       setFavorites(savedFavorites);
@@ -274,6 +294,139 @@ export default function AstanaTravelApp() {
   const syncHotels = (newH) => { setHotels(newH); localStorage.setItem('at_hotels_v2', JSON.stringify(newH)); };
   const syncUsers = (newU) => { setUsers(newU); localStorage.setItem('at_users', JSON.stringify(newU)); };
 
+  const normalizePhone = phone => String(phone || '').replace(/\D/g, '');
+  const phonesMatch = (firstPhone, secondPhone) => {
+    const a = normalizePhone(firstPhone);
+    const b = normalizePhone(secondPhone);
+    if (!a || !b) return false;
+    if (a === b) return true;
+    const tailA = a.length >= 10 ? a.slice(-10) : a;
+    const tailB = b.length >= 10 ? b.slice(-10) : b;
+    return tailA.length === 10 && tailA === tailB;
+  };
+
+  const switchAccount = (userId) => {
+    if (!userId) {
+      setCurrentUserId('');
+      localStorage.setItem('at_current_user_id', '');
+      pushToast('Вы вышли из аккаунта');
+      return true;
+    }
+
+    const targetUser = touristUsers.find(user => user.id === userId);
+    if (!targetUser) {
+      pushToast('Аккаунт не найден');
+      return false;
+    }
+
+    setCurrentUserId(targetUser.id);
+    localStorage.setItem('at_current_user_id', targetUser.id);
+    logAction('Вход в аккаунт', `Активный профиль: ${targetUser.name}`, 'СИСТЕМА');
+    pushToast(`Вы вошли как ${targetUser.name}`);
+    return true;
+  };
+
+  const loginWithPhone = (phone) => {
+    const digits = normalizePhone(phone);
+    if (digits.length < 6) {
+      pushToast('Введите корректный номер телефона');
+      return false;
+    }
+
+    const foundUser = touristUsers.find(user => phonesMatch(user.phone, phone));
+    if (!foundUser) {
+      pushToast('Аккаунт с таким номером не найден. Создайте новый профиль!');
+      return false;
+    }
+
+    return switchAccount(foundUser.id);
+  };
+
+  const registerAccount = ({ name, phone, email = '' }) => {
+    const trimmedName = String(name || '').trim();
+    const trimmedPhone = String(phone || '').trim();
+    const trimmedEmail = String(email || '').trim();
+
+    if (trimmedName.length < 2) {
+      pushToast('Укажите имя (минимум 2 символа)');
+      return false;
+    }
+    if (normalizePhone(trimmedPhone).length < 6) {
+      pushToast('Введите корректный номер телефона');
+      return false;
+    }
+    if (trimmedEmail && !trimmedEmail.includes('@')) {
+      pushToast('Введите корректный email');
+      return false;
+    }
+    if (touristUsers.some(user => phonesMatch(user.phone, trimmedPhone))) {
+      pushToast('Аккаунт с таким номером уже существует. Войдите по номеру!');
+      return false;
+    }
+
+    const newUser = {
+      id: `u-${Date.now()}`,
+      name: trimmedName,
+      phone: trimmedPhone,
+      email: trimmedEmail,
+      ltv: 0,
+      status: 'Standard',
+      isBanned: false,
+      createdAt: new Date().toLocaleDateString('ru-RU')
+    };
+
+    const updatedUsers = [...users, newUser];
+    syncUsers(updatedUsers);
+    setCurrentUserId(newUser.id);
+    localStorage.setItem('at_current_user_id', newUser.id);
+    logAction('Регистрация', `Создан аккаунт: ${newUser.name} (${newUser.phone})`, 'СИСТЕМА');
+    pushToast(`Добро пожаловать, ${newUser.name}!`);
+    return true;
+  };
+
+  const updateCurrentProfile = ({ name, phone, email = '' }) => {
+    if (!currentUser) return false;
+
+    const trimmedName = String(name || '').trim();
+    const trimmedPhone = String(phone || '').trim();
+    const trimmedEmail = String(email || '').trim();
+
+    if (trimmedName.length < 2) {
+      pushToast('Укажите имя (минимум 2 символа)');
+      return false;
+    }
+    if (normalizePhone(trimmedPhone).length < 6) {
+      pushToast('Введите корректный номер телефона');
+      return false;
+    }
+    if (trimmedEmail && !trimmedEmail.includes('@')) {
+      pushToast('Введите корректный email');
+      return false;
+    }
+    if (touristUsers.some(user => user.id !== currentUser.id && phonesMatch(user.phone, trimmedPhone))) {
+      pushToast('Этот номер телефона уже привязан к другому аккаунту');
+      return false;
+    }
+
+    const updatedUsers = users.map(user => (
+      user.id === currentUser.id
+        ? { ...user, name: trimmedName, phone: trimmedPhone, email: trimmedEmail }
+        : user
+    ));
+    syncUsers(updatedUsers);
+
+    const updatedUser = updatedUsers.find(user => user.id === currentUser.id);
+    const updatedBookings = bookings.map(booking => (
+      booking.user?.id === currentUser.id ? { ...booking, user: updatedUser } : booking
+    ));
+    setBookings(updatedBookings);
+    localStorage.setItem('at_books', JSON.stringify(updatedBookings));
+
+    logAction('Профиль', `Обновлён профиль ${trimmedName}`, 'СИСТЕМА');
+    pushToast('Профиль обновлён');
+    return true;
+  };
+
   const handleRoleSwitch = () => {
     const newRole = role === 'admin' ? 'user' : 'admin';
     navigateToTab(newRole === 'admin' ? 'admin-dash' : 'catalog');
@@ -386,6 +539,10 @@ export default function AstanaTravelApp() {
   };
 
   const confirmBooking = () => {
+    if (!currentUser) {
+      pushToast('Войдите в аккаунт для оформления демо-бронирования');
+      return;
+    }
     const packagePrice = (tourConfig.datePrice || activeHotel.price) * (tourConfig.nights / 7);
     const finalPrice = packagePrice * tourConfig.class * tourConfig.pax;
     const newBooking = {
@@ -401,6 +558,21 @@ export default function AstanaTravelApp() {
     const newBooks = [newBooking, ...bookings];
     setBookings(newBooks);
     localStorage.setItem('at_books', JSON.stringify(newBooks));
+
+    const updatedUsers = users.map(user => {
+      if (user.id !== currentUser.id) return user;
+      const nextLtv = (Number(user.ltv) || 0) + finalPrice;
+      const nextStatus = user.status === 'Staff'
+        ? 'Staff'
+        : nextLtv >= 1500000
+          ? 'Platinum'
+          : nextLtv >= 500000
+            ? 'Gold'
+            : 'Standard';
+      return { ...user, ltv: nextLtv, status: nextStatus };
+    });
+    syncUsers(updatedUsers);
+
     logAction('Демо-бронирование', `Пользователь ${currentUser.name} оформил демо-тур в ${activeHotel.name} за ${formatMoney(finalPrice)} ₸`, 'ПОКУПКА');
     
     changeCheckoutStep(2); // Show Voucher
@@ -509,6 +681,10 @@ export default function AstanaTravelApp() {
     const reviewRating = Number(rating);
     if (role !== 'user') {
       pushToast('Переключитесь в режим туриста, чтобы оставить отзыв');
+      return false;
+    }
+    if (!currentUser) {
+      pushToast('Войдите в аккаунт, чтобы оставить отзыв');
       return false;
     }
     if (currentUser.isBanned) {
@@ -652,7 +828,8 @@ export default function AstanaTravelApp() {
   const filteredLogs = logs.filter(l => logFilter === 'ALL' || l.type === logFilter);
   const allReviews = hotels.flatMap(h => h.reviews.map(r => ({ ...r, hotelName: h.name, hotelId: h.id })));
   const app = {
-    role, activeTab, setActiveTab: navigateToTab, hotels, favorites, bookings, users, currentUser,
+    role, activeTab, setActiveTab: navigateToTab, hotels, favorites, bookings, users, touristUsers, currentUser,
+    switchAccount, loginWithPhone, registerAccount, updateCurrentProfile,
     search, setSearch, filterCountry, setFilterCountry, filterCity, setFilterCity,
     filterMeal, setFilterMeal, maxPrice, setMaxPrice, sortOrder, setSortOrder,
     quickFilters, setQuickFilters,
@@ -702,7 +879,7 @@ export default function AstanaTravelApp() {
                   <option value="trip-finder">Подбор тура</option>
                   <option value="compare">Сравнение ({compareIds.length})</option>
                   <option value="recent">Недавно смотрели</option>
-                  <option value="profile">Кабинет</option>
+                  <option value="profile">{currentUser ? `Кабинет (${currentUser.name.split(' ')[0]})` : 'Войти'}</option>
                 </>
               ) : (
                 <>
@@ -725,7 +902,7 @@ export default function AstanaTravelApp() {
                 <button onClick={() => navigateToTab('trip-finder')} className={`hidden xl:block px-3 py-1.5 rounded-lg text-sm font-bold ${activeTab==='trip-finder'?'bg-indigo-100 text-indigo-600':'text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>Подбор тура</button>
                 <button onClick={() => navigateToTab('compare')} className={`hidden xl:block px-3 py-1.5 rounded-lg text-sm font-bold ${activeTab==='compare'?'bg-indigo-100 text-indigo-600':'text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>Сравнение ({compareIds.length})</button>
                 <button onClick={() => navigateToTab('recent')} className={`hidden xl:block px-3 py-1.5 rounded-lg text-sm font-bold ${activeTab==='recent'?'bg-indigo-100 text-indigo-600':'text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>Недавно смотрели</button>
-                <button onClick={() => navigateToTab('profile')} className={`hidden xl:flex px-3 py-1.5 rounded-lg text-sm font-bold items-center gap-1 ${activeTab==='profile'?'bg-indigo-100 text-indigo-600':'text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800'}`}><ShoppingBag className="w-4 h-4"/> Кабинет</button>
+                <button onClick={() => navigateToTab('profile')} className={`hidden xl:flex px-3 py-1.5 rounded-lg text-sm font-bold items-center gap-1.5 ${activeTab==='profile'?'bg-indigo-100 text-indigo-600':'text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800'}`}><User className="w-4 h-4"/> {currentUser ? currentUser.name.split(' ')[0] : 'Войти'}</button>
               </>
             ) : (
               <>

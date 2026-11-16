@@ -406,15 +406,37 @@ export default function HotelBookingModal({ app }) {
                     <Star className="w-12 h-12 text-amber-500 fill-amber-500 opacity-20" />
                   </div>
 
-                  {role === 'user' && (currentUser.isBanned ? (
+                  {role === 'user' && (!currentUser ? (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/50">
+                      <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                        Войдите или создайте аккаунт, чтобы оставить отзыв об отеле.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('profile')}
+                        className="shrink-0 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-indigo-700"
+                      >
+                        Войти в аккаунт
+                      </button>
+                    </div>
+                  ) : currentUser.isBanned ? (
                     <p className="rounded-xl bg-rose-50 p-4 text-sm font-semibold text-rose-700 dark:bg-rose-950/50 dark:text-rose-300">
                       Ваш аккаунт ограничен модератором. Вы не можете оставлять отзывы.
                     </p>
                   ) : (
                     <form onSubmit={handleReviewSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800/50">
-                      <div>
-                        <h4 className="font-bold">Оставить отзыв</h4>
-                        <p className="mt-1 text-xs text-slate-500">Отзыв будет опубликован от имени {currentUser.name}.</p>
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <h4 className="font-bold">Оставить отзыв</h4>
+                          <p className="mt-1 text-xs text-slate-500">Отзыв будет опубликован от имени {currentUser.name}.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('profile')}
+                          className="text-xs font-bold text-indigo-600 hover:underline dark:text-indigo-400"
+                        >
+                          Сменить аккаунт
+                        </button>
                       </div>
                       <label htmlFor="new-review-rating" className="block text-xs font-bold text-slate-600 dark:text-slate-300">
                         Ваша оценка
@@ -501,7 +523,27 @@ export default function HotelBookingModal({ app }) {
                   <h3 className="text-2xl font-bold">Демо-оформление</h3>
                   <p className="rounded-xl bg-amber-50 p-3 text-sm font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200">Это только демонстрация: Kaspi и реальная оплата не подключены. Деньги списаны не будут.</p>
                   <p className="text-slate-500 text-sm">Расчётная сумма: <br/><span className="text-3xl font-black text-slate-900 dark:text-white mt-2 block">{formatMoney(totalPrice)} ₸</span></p>
-                  <button onClick={confirmBooking} className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-2xl shadow-lg transition">Создать демо-бронирование</button>
+                  {currentUser ? (
+                    <>
+                      <p className="text-xs text-slate-500">
+                        Оформление на аккаунт: <span className="font-bold text-slate-800 dark:text-slate-200">{currentUser.name}</span> ({currentUser.phone})
+                      </p>
+                      <button onClick={confirmBooking} className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-2xl shadow-lg transition">Создать демо-бронирование</button>
+                    </>
+                  ) : (
+                    <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/50">
+                      <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                        Войдите или зарегистрируйтесь, чтобы сохранить демо-заявку в своём кабинете.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('profile')}
+                        className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white transition hover:bg-indigo-700"
+                      >
+                        Войти в аккаунт
+                      </button>
+                    </div>
+                  )}
                   <button onClick={() => setCheckoutStep(0)} className="text-sm font-bold text-slate-400 hover:text-slate-600 transition">Отмена</button>
                 </div>
               )}

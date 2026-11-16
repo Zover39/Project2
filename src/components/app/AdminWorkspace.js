@@ -368,7 +368,7 @@ export default function AdminWorkspace({ app }) {
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-bold text-sm flex items-center gap-2">{u.name} {u.isBanned && <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded font-black uppercase">Banned</span>}</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">{u.phone} • Статус: {u.status}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">{u.phone}{u.email ? ` • ${u.email}` : ''} • Статус: {u.status}</p>
                           </div>
                           <div className="text-right">
                             <p className="font-black text-sm text-emerald-600">{formatMoney(u.ltv)} ₸</p>
@@ -378,7 +378,7 @@ export default function AdminWorkspace({ app }) {
                         {userBookings.length > 0 && (
                           <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 space-y-1">
                             {userBookings.map(b => (
-                              <p key={b.id} className="text-xs text-slate-600 dark:text-slate-400 truncate">• {b.hotelName} ({b.date})</p>
+                              <p key={b.id} className="text-xs text-slate-600 dark:text-slate-400 truncate">• {b.hotel?.name || b.hotelName || 'Отель'} ({b.date})</p>
                             ))}
                           </div>
                         )}
