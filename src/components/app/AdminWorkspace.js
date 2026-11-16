@@ -13,7 +13,7 @@ export default function AdminWorkspace({ app }) {
   const [reviewFilter, setReviewFilter] = useState('ALL');
   const {
     activeTab, users, bookings, formatMoney, bulkConfig, setBulkConfig,
-    COUNTRIES, applyBulkPrice, hotelForm, setHotelForm, CITIES, MEAL_TYPES,
+    COUNTRIES, applyBulkPrice, hotelForm, setHotelForm, MEAL_TYPES,
     editingHotelId, handleSaveHotel, setEditingHotelId, hotels, handleEditHotel,
     syncHotels, pushToast, logAction, filteredLogs, logFilter, setLogFilter,
     toggleBlockUser, allReviews, adminReplyText, setAdminReplyText,
@@ -251,32 +251,56 @@ export default function AdminWorkspace({ app }) {
                   <div className="w-full md:w-1/3">
                     <h3 className="font-bold mb-4 text-xl">{editingHotelId ? 'Редактировать отель' : 'Добавить новый отель'}</h3>
                     <div className="space-y-3 text-sm">
-                      <input type="text" placeholder="Название отеля" value={hotelForm.name} onChange={e=>setHotelForm({...hotelForm, name:e.target.value})} className="w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none focus:border-indigo-500 font-bold" />
+                      <label htmlFor="hotel-name" className="block text-xs font-semibold text-slate-500">Название отеля</label>
+                      <input id="hotel-name" type="text" placeholder="Введите название отеля" value={hotelForm.name} onChange={e=>setHotelForm({...hotelForm, name:e.target.value})} className="w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none focus:border-indigo-500 font-bold" />
                       <div className="grid grid-cols-2 gap-3">
-                        <input type="number" placeholder="Базовая цена (₸)" value={hotelForm.price} onChange={e=>setHotelForm({...hotelForm, price:Number(e.target.value)})} className="w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none focus:border-indigo-500" />
-                        <select value={hotelForm.stars} onChange={e=>setHotelForm({...hotelForm, stars: Number(e.target.value)})} className="w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none">
-                          <option value="3">3 Звезды</option>
-                          <option value="4">4 Звезды</option>
-                          <option value="5">5 Звезд</option>
-                        </select>
+                        <div>
+                          <label htmlFor="hotel-price" className="block text-xs font-semibold text-slate-500">Базовая цена (₸)</label>
+                          <input id="hotel-price" type="number" placeholder="Введите цену" value={hotelForm.price} onChange={e=>setHotelForm({...hotelForm, price:Number(e.target.value)})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none focus:border-indigo-500" />
+                        </div>
+                        <div>
+                          <label htmlFor="hotel-stars" className="block text-xs font-semibold text-slate-500">Количество звёзд</label>
+                          <select id="hotel-stars" value={hotelForm.stars} onChange={e=>setHotelForm({...hotelForm, stars: Number(e.target.value)})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none">
+                            <option value="3">3 звезды</option>
+                            <option value="4">4 звезды</option>
+                            <option value="5">5 звёзд</option>
+                          </select>
+                        </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
-                        <select value={hotelForm.country} onChange={e=>setHotelForm({...hotelForm, country: e.target.value, city: CITIES[e.target.value][0]})} className="w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none">
-                          {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        <select value={hotelForm.city} onChange={e=>setHotelForm({...hotelForm, city: e.target.value})} className="w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none">
-                          {CITIES[hotelForm.country].map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
+                        <div>
+                          <label htmlFor="hotel-country" className="block text-xs font-semibold text-slate-500">Страна</label>
+                          <input id="hotel-country" type="text" placeholder="Введите страну" value={hotelForm.country} onChange={e=>setHotelForm({...hotelForm, country: e.target.value})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none" />
+                        </div>
+                        <div>
+                          <label htmlFor="hotel-city" className="block text-xs font-semibold text-slate-500">Город</label>
+                          <input id="hotel-city" type="text" placeholder="Введите город" value={hotelForm.city} onChange={e=>setHotelForm({...hotelForm, city: e.target.value})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none" />
+                        </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
-                        <select value={hotelForm.meal} onChange={e=>setHotelForm({...hotelForm, meal: e.target.value})} className="w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none">
-                          {MEAL_TYPES.map(m => <option key={m} value={m}>{m}</option>)}
-                        </select>
-                        <input type="text" placeholder="Тип пляжа" value={hotelForm.beach} onChange={e=>setHotelForm({...hotelForm, beach:e.target.value})} className="w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none" />
+                        <div>
+                          <label htmlFor="hotel-meal" className="block text-xs font-semibold text-slate-500">Тип питания</label>
+                          <select id="hotel-meal" value={hotelForm.meal} onChange={e=>setHotelForm({...hotelForm, meal: e.target.value})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none">
+                            {MEAL_TYPES.map(m => <option key={m} value={m}>{m}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="hotel-beach" className="block text-xs font-semibold text-slate-500">Тип пляжа</label>
+                          <input id="hotel-beach" type="text" placeholder="Например, песчаный" value={hotelForm.beach} onChange={e=>setHotelForm({...hotelForm, beach:e.target.value})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none" />
+                        </div>
                       </div>
-                      <input type="text" placeholder="URL Картинки (или Base64)" value={hotelForm.image} onChange={e=>setHotelForm({...hotelForm, image:e.target.value})} className="w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none" />
-                      <textarea placeholder="Дополнительные фото: по одному URL в строке" rows="3" value={hotelForm.gallery} onChange={e=>setHotelForm({...hotelForm, gallery:e.target.value})} className="w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none resize-y" />
-                      <textarea placeholder="Полное описание отеля..." rows="3" value={hotelForm.description} onChange={e=>setHotelForm({...hotelForm, description:e.target.value})} className="w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none resize-none"></textarea>
+                      <div>
+                        <label htmlFor="hotel-image" className="block text-xs font-semibold text-slate-500">Основное фото (URL или Base64)</label>
+                        <input id="hotel-image" type="text" placeholder="Вставьте ссылку на фото" value={hotelForm.image} onChange={e=>setHotelForm({...hotelForm, image:e.target.value})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none" />
+                      </div>
+                      <div>
+                        <label htmlFor="hotel-gallery" className="block text-xs font-semibold text-slate-500">Дополнительные фото (по одному URL в строке)</label>
+                        <textarea id="hotel-gallery" placeholder="Вставьте ссылки на фото, каждая с новой строки" rows="3" value={hotelForm.gallery} onChange={e=>setHotelForm({...hotelForm, gallery:e.target.value})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none resize-y" />
+                      </div>
+                      <div>
+                        <label htmlFor="hotel-description" className="block text-xs font-semibold text-slate-500">Описание отеля</label>
+                        <textarea id="hotel-description" placeholder="Расскажите об отеле" rows="3" value={hotelForm.description} onChange={e=>setHotelForm({...hotelForm, description:e.target.value})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none resize-none"></textarea>
+                      </div>
 
                       <div className="flex gap-2 pt-2">
                         <button onClick={handleSaveHotel} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-3 rounded-xl transition shadow-md">

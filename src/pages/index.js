@@ -54,7 +54,7 @@ export default function AstanaTravelApp() {
   const [bookings, setBookings] = useState([]);
   const [logs, setLogs] = useState([]);
   const [users, setUsers] = useState(INITIAL_USERS);
-  const [currentUser] = useState(INITIAL_USERS[0]); 
+  const currentUser = users.find(user => user.id === INITIAL_USERS[0].id) || INITIAL_USERS[0];
 
   // -- ФИЛЬТРЫ КАТАЛОГА --
   const [search, setSearch] = useState('');
@@ -504,9 +504,61 @@ export default function AstanaTravelApp() {
     pushToast(user.isBanned ? 'Пользователь заблокирован' : 'Пользователь разблокирован');
   };
 
+  const submitReview = (hotelId, rating, text) => {
+    const reviewText = text.trim();
+    const reviewRating = Number(rating);
+    if (role !== 'user') {
+      pushToast('Переключитесь в режим туриста, чтобы оставить отзыв');
+      return false;
+    }
+    if (currentUser.isBanned) {
+      pushToast('Ваш аккаунт ограничен модератором');
+      return false;
+    }
+    if (!reviewText) {
+      pushToast('Напишите текст отзыва');
+      return false;
+    }
+    if (!Number.isInteger(reviewRating) || reviewRating < 1 || reviewRating > 5) {
+      pushToast('Выберите оценку от 1 до 5');
+      return false;
+    }
+    if (!hotels.some(hotel => hotel.id === hotelId)) {
+      pushToast('Не удалось найти выбранный отель');
+      return false;
+    }
+
+    const review = {
+      id: `review-${Date.now()}`,
+      userId: currentUser.id,
+      author: currentUser.name,
+      date: new Date().toLocaleDateString('ru-RU'),
+      rating: reviewRating,
+      text: reviewText,
+      likes: 0
+    };
+    const newHotels = hotels.map(hotel => {
+      if (hotel.id !== hotelId) return hotel;
+      const reviews = [...(hotel.reviews || []), review];
+      const averageRating = reviews.reduce((sum, item) => sum + Number(item.rating || 0), 0) / reviews.length;
+      return { ...hotel, reviews, rating: Number(averageRating.toFixed(1)) };
+    });
+    syncHotels(newHotels);
+    if (activeHotel?.id === hotelId) setActiveHotel(newHotels.find(hotel => hotel.id === hotelId));
+    logAction('Новый отзыв', `${currentUser.name} оставил отзыв об отеле ${activeHotel?.name || hotelId}`, 'СИСТЕМА');
+    pushToast('Отзыв опубликован');
+    return true;
+  };
+
   const deleteReview = (hotelId, reviewId) => {
     const newHotels = hotels.map(h => {
-      if (h.id === hotelId) return { ...h, reviews: h.reviews.filter(r => r.id !== reviewId) };
+      if (h.id === hotelId) {
+        const reviews = h.reviews.filter(r => r.id !== reviewId);
+        const averageRating = reviews.length
+          ? reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length
+          : null;
+        return { ...h, reviews, rating: averageRating === null ? null : Number(averageRating.toFixed(1)) };
+      }
       return h;
     });
     syncHotels(newHotels);
@@ -615,7 +667,7 @@ export default function AstanaTravelApp() {
     recentlyViewedHotels, comparedHotels, compareIds, filteredLogs, allReviews,
     pushToast, toggleFav, clearFavorites, updateFavoriteNote, toggleCompare, clearCompare,
     resetFilters, confirmBooking, cancelBooking, applyBulkPrice, handleSaveHotel, handleEditHotel,
-    syncHotels, logAction, toggleBlockUser, deleteReview, replyToReview, likeReview
+    syncHotels, logAction, toggleBlockUser, deleteReview, replyToReview, likeReview, submitReview
   };
 
   return (

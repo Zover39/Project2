@@ -19,12 +19,15 @@ export default function HotelBookingModal({ app }) {
   const {
     activeHotel, closeHotel, modalTab, setModalTab, checkoutStep,
     setCheckoutStep, tourConfig, setTourConfig, formatMoney, confirmBooking,
-    likeReview, setActiveTab, pushToast, adults, children, updateGuestCounts
+    likeReview, submitReview, role, currentUser, setActiveTab, pushToast,
+    adults, children, updateGuestCounts
   } = app;
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [reviewSearch, setReviewSearch] = useState('');
   const [reviewRating, setReviewRating] = useState('ALL');
   const [reviewSort, setReviewSort] = useState('newest');
+  const [newReviewRating, setNewReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
   const dialogRef = useRef(null);
   const gallery = activeHotel
     ? (activeHotel.photos?.length
@@ -80,6 +83,11 @@ export default function HotelBookingModal({ app }) {
     } catch {
       pushToast('Скопируйте ссылку из адресной строки браузера');
     }
+  };
+
+  const handleReviewSubmit = event => {
+    event.preventDefault();
+    if (submitReview(activeHotel.id, newReviewRating, reviewText)) setReviewText('');
   };
 
   return (
@@ -397,6 +405,46 @@ export default function HotelBookingModal({ app }) {
                     </div>
                     <Star className="w-12 h-12 text-amber-500 fill-amber-500 opacity-20" />
                   </div>
+
+                  {role === 'user' && (currentUser.isBanned ? (
+                    <p className="rounded-xl bg-rose-50 p-4 text-sm font-semibold text-rose-700 dark:bg-rose-950/50 dark:text-rose-300">
+                      Ваш аккаунт ограничен модератором. Вы не можете оставлять отзывы.
+                    </p>
+                  ) : (
+                    <form onSubmit={handleReviewSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800/50">
+                      <div>
+                        <h4 className="font-bold">Оставить отзыв</h4>
+                        <p className="mt-1 text-xs text-slate-500">Отзыв будет опубликован от имени {currentUser.name}.</p>
+                      </div>
+                      <label htmlFor="new-review-rating" className="block text-xs font-bold text-slate-600 dark:text-slate-300">
+                        Ваша оценка
+                        <select
+                          id="new-review-rating"
+                          value={newReviewRating}
+                          onChange={event => setNewReviewRating(Number(event.target.value))}
+                          className="mt-1 block w-full rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-900"
+                        >
+                          {[5, 4, 3, 2, 1].map(rating => <option key={rating} value={rating}>{rating} из 5 звёзд</option>)}
+                        </select>
+                      </label>
+                      <label htmlFor="new-review-text" className="block text-xs font-bold text-slate-600 dark:text-slate-300">
+                        Текст отзыва
+                        <textarea
+                          id="new-review-text"
+                          required
+                          maxLength={1000}
+                          rows={3}
+                          value={reviewText}
+                          onChange={event => setReviewText(event.target.value)}
+                          placeholder="Расскажите о вашем впечатлении об отеле"
+                          className="mt-1 block w-full resize-y rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-900"
+                        />
+                      </label>
+                      <button type="submit" className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-indigo-700">
+                        Опубликовать отзыв
+                      </button>
+                    </form>
+                  ))}
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <label className="sm:col-span-1">
