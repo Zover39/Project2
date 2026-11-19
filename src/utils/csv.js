@@ -28,20 +28,29 @@ export const buildFavoritesCsv = (hotels, notes = {}) => {
 
 export const buildBookingsCsv = bookings => {
   const rows = [
-    ['Номер заявки', 'Дата оформления', 'Отель', 'Страна', 'Город', 'Заезд', 'Выезд', 'Гости', 'Ночей', 'Стоимость (₸)', 'Статус'],
-    ...bookings.map(booking => [
-      booking.id,
-      booking.date,
-      booking.hotel?.name,
-      booking.hotel?.country,
-      booking.hotel?.city,
-      booking.trip?.departureDate,
-      booking.trip?.checkOutDate,
-      booking.trip?.pax ?? 2,
-      booking.trip?.nights ?? 7,
-      booking.price,
-      booking.status === 'cancelled_demo' ? 'Отменено' : 'Демо подтверждено'
-    ])
+    ['Номер заявки', 'Дата оформления', 'Отель', 'Страна', 'Город', 'Заезд', 'Выезд', 'Гости', 'Ночей', 'Стоимость (₸)', 'Статус', 'Клиент', 'Телефон', 'Email', 'Причина последней отмены', 'Дата и время отмены', 'Комментарий к отмене'],
+    ...bookings.map(booking => {
+      const cancellation = booking.cancellationHistory?.[booking.cancellationHistory.length - 1] || booking.cancellation || {};
+      return [
+        booking.id,
+        booking.date,
+        booking.hotel?.name,
+        booking.hotel?.country,
+        booking.hotel?.city,
+        booking.trip?.departureDate,
+        booking.trip?.checkOutDate,
+        booking.trip?.pax ?? 2,
+        booking.trip?.nights ?? 7,
+        booking.price,
+        booking.status === 'cancelled_demo' ? 'Отменено' : 'Демо подтверждено',
+        booking.user?.name,
+        booking.user?.phone,
+        booking.user?.email,
+        cancellation.reason,
+        cancellation.cancelledAt,
+        cancellation.note
+      ];
+    })
   ];
 
   return serializeCsv(rows);

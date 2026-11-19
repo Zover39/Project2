@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
-import { COUNTRIES, CITIES, MEAL_TYPES, generateHotels, INITIAL_USERS } from '../data/appData';
+import { MEAL_TYPES, generateHotels, INITIAL_USERS } from '../data/appData';
 import { formatMoney } from '../utils/format';
+import {
+  buildDefaultDestinationDirectory, canonicalizeHotelDestination, ensureDestinationDirectory,
+  findDestinationCity, findDestinationCountry, normalizeDestinationKey
+} from '../utils/destinations';
 import UserWorkspace from '../components/app/UserWorkspace';
 import AdminWorkspace from '../components/app/AdminWorkspace';
 import HotelBookingModal from '../components/app/HotelBookingModal';
@@ -28,6 +32,7 @@ const PATH_TABS = Object.fromEntries(
   Object.entries(TAB_PATHS).map(([tab, path]) => [path, tab])
 );
 const HOTEL_CATALOG_VERSION = 'curated-2026-01';
+const DESTINATION_DIRECTORY_KEY = 'at_destination_directory';
 
 const addNightsToDate = (date, nights) => {
   if (!date) return '';
@@ -56,6 +61,12 @@ export default function AstanaTravelApp() {
   const [users, setUsers] = useState(INITIAL_USERS);
   const [currentUserId, setCurrentUserId] = useState(INITIAL_USERS[0].id);
   const touristUsers = users.filter(user => user.status !== 'Staff');
+  const [destinationDirectory, setDestinationDirectory] = useState(buildDefaultDestinationDirectory);
+  const COUNTRIES = destinationDirectory.map(country => country.name);
+  const CITIES = Object.fromEntries(destinationDirectory.map(country => [
+    country.name,
+    country.cities.map(city => city.name)
+  ]));
   const currentUser = currentUserId
     ? users.find(user => user.id === currentUserId) || null
     : null;
@@ -107,32 +118,41 @@ export default function AstanaTravelApp() {
     const sLogs = localStorage.getItem('at_logs');
     const sUsers = localStorage.getItem('at_users');
     const sTheme = localStorage.getItem('at_theme');
+    const sDestinations = localStorage.getItem(DESTINATION_DIRECTORY_KEY);
 
     const savedHotels = sHotels ? JSON.parse(sHotels) : null;
     const seededHotels = generateHotels();
     const isCurrentCatalog = localStorage.getItem('at_hotels_catalog_version') === HOTEL_CATALOG_VERSION;
     const customHotels = savedHotels?.filter(hotel => hotel.id.startsWith('h-custom-')) || [];
-    const initialHotels = savedHotels && isCurrentCatalog
+    const savedHotelCatalog = savedHotels && isCurrentCatalog
       ? savedHotels
       : [...seededHotels, ...customHotels];
+    const initialDirectory = ensureDestinationDirectory(
+      sDestinations ? JSON.parse(sDestinations) : buildDefaultDestinationDirectory(),
+      savedHotelCatalog
+    );
+    const initialHotels = savedHotelCatalog.map(hotel => canonicalizeHotelDestination(hotel, initialDirectory));
     const validHotelIds = new Set(initialHotels.map(hotel => hotel.id));
+    setDestinationDirectory(initialDirectory);
     setHotels(initialHotels);
     localStorage.setItem('at_hotels_v2', JSON.stringify(initialHotels));
     localStorage.setItem('at_hotels_catalog_version', HOTEL_CATALOG_VERSION);
+    localStorage.setItem(DESTINATION_DIRECTORY_KEY, JSON.stringify(initialDirectory));
     const loadedUsers = sUsers ? JSON.parse(sUsers) : INITIAL_USERS;
     setUsers(loadedUsers);
     const sCurrentUserId = localStorage.getItem('at_current_user_id');
     const touristList = loadedUsers.filter(user => user.status !== 'Staff');
+    const availableTourists = touristList.filter(user => !user.isBanned);
     if (sCurrentUserId === null) {
-      const defaultId = touristList[0]?.id || '';
+      const defaultId = availableTourists[0]?.id || '';
       setCurrentUserId(defaultId);
       localStorage.setItem('at_current_user_id', defaultId);
     } else if (sCurrentUserId === '') {
       setCurrentUserId('');
-    } else if (touristList.some(user => user.id === sCurrentUserId)) {
+    } else if (availableTourists.some(user => user.id === sCurrentUserId)) {
       setCurrentUserId(sCurrentUserId);
     } else {
-      const fallbackId = touristList[0]?.id || '';
+      const fallbackId = availableTourists[0]?.id || '';
       setCurrentUserId(fallbackId);
       localStorage.setItem('at_current_user_id', fallbackId);
     }
@@ -293,6 +313,156 @@ export default function AstanaTravelApp() {
 
   const syncHotels = (newH) => { setHotels(newH); localStorage.setItem('at_hotels_v2', JSON.stringify(newH)); };
   const syncUsers = (newU) => { setUsers(newU); localStorage.setItem('at_users', JSON.stringify(newU)); };
+  const syncDestinationDirectory = directory => {
+    setDestinationDirectory(directory);
+    localStorage.setItem(DESTINATION_DIRECTORY_KEY, JSON.stringify(directory));
+  };
+  const parseDestinationAliases = value => String(value || '')
+    .split(/[,\n;]/)
+    .map(alias => alias.trim())
+    .filter(Boolean);
+  const mergeDestinationAliases = (existingAliases, candidates, canonicalName, findOwner) => {
+    const aliases = [...(existingAliases || [])];
+    const knownKeys = new Set([canonicalName, ...aliases].map(normalizeDestinationKey));
+    for (const candidate of candidates) {
+      const key = normalizeDestinationKey(candidate);
+      if (!key || knownKeys.has(key)) continue;
+      const owner = findOwner(candidate);
+      if (owner && owner.name !== canonicalName) {
+        return { aliases, conflict: owner };
+      }
+      aliases.push(candidate);
+      knownKeys.add(key);
+    }
+    return { aliases, conflict: null };
+  };
+  const addDestinationCountry = (value, aliasesText = '') => {
+    const name = String(value || '').trim();
+    if (!name) {
+      pushToast('Введите название страны');
+      return '';
+    }
+    const aliases = parseDestinationAliases(aliasesText);
+    const existing = findDestinationCountry(destinationDirectory, name);
+    if (existing) {
+      const merged = mergeDestinationAliases(
+        existing.aliases,
+        [name, ...aliases],
+        existing.name,
+        alias => findDestinationCountry(destinationDirectory, alias)
+      );
+      if (merged.conflict) {
+        pushToast(`Вариант «${merged.conflict.name}» уже используется другой страной`);
+        return '';
+      }
+      if (merged.aliases.length === existing.aliases.length) {
+        pushToast(`Страна «${existing.name}» уже есть в справочнике`);
+        return existing.name;
+      }
+      syncDestinationDirectory(destinationDirectory.map(country => country.name === existing.name
+        ? { ...country, aliases: merged.aliases }
+        : country));
+      pushToast(`Варианты названия добавлены к стране «${existing.name}»`);
+      return existing.name;
+    }
+
+    const merged = mergeDestinationAliases(
+      [],
+      aliases,
+      name,
+      alias => findDestinationCountry(destinationDirectory, alias)
+    );
+    if (merged.conflict) {
+      pushToast(`Вариант «${merged.conflict.name}» уже используется другой страной`);
+      return '';
+    }
+    syncDestinationDirectory([...destinationDirectory, { name, aliases: merged.aliases, cities: [] }]);
+    pushToast(`Страна «${name}» добавлена`);
+    return name;
+  };
+  const addDestinationCity = (countryValue, value, aliasesText = '') => {
+    const country = findDestinationCountry(destinationDirectory, countryValue);
+    const name = String(value || '').trim();
+    if (!country) {
+      pushToast('Сначала выберите страну');
+      return '';
+    }
+    if (!name) {
+      pushToast('Введите название города');
+      return '';
+    }
+    const aliases = parseDestinationAliases(aliasesText);
+    const existing = findDestinationCity(destinationDirectory, country.name, name);
+    const updatedAliases = mergeDestinationAliases(
+      existing?.aliases || [],
+      [name, ...aliases],
+      existing?.name || name,
+      alias => findDestinationCity(destinationDirectory, country.name, alias)
+    );
+    if (updatedAliases.conflict) {
+      pushToast(`Вариант «${updatedAliases.conflict.name}» уже используется другим городом в этой стране`);
+      return '';
+    }
+
+    const cities = existing
+      ? country.cities.map(city => city.name === existing.name
+        ? { ...city, aliases: updatedAliases.aliases }
+        : city)
+      : [...country.cities, { name, aliases: updatedAliases.aliases }];
+    const changed = !existing || updatedAliases.aliases.length !== existing.aliases.length;
+    if (!changed) {
+      pushToast(`Город «${existing.name}» уже есть в справочнике`);
+      return existing.name;
+    }
+    syncDestinationDirectory(destinationDirectory.map(item => item.name === country.name
+      ? { ...item, cities }
+      : item));
+    pushToast(existing
+      ? `Варианты названия добавлены к городу «${existing.name}»`
+      : `Город «${name}» добавлен в «${country.name}»`);
+    return existing?.name || name;
+  };
+  const adjustUserLtv = (userId, amount) => {
+    if (!userId || !Number.isFinite(amount) || amount === 0) return;
+    const updatedUsers = users.map(user => {
+      if (user.id !== userId || user.status === 'Staff') return user;
+      const ltv = Math.max(0, (Number(user.ltv) || 0) + amount);
+      const status = ltv >= 1500000 ? 'Platinum' : ltv >= 500000 ? 'Gold' : 'Standard';
+      return { ...user, ltv, status };
+    });
+    syncUsers(updatedUsers);
+  };
+  const deleteHotel = (hotelId) => {
+    const hotel = hotels.find(item => item.id === hotelId);
+    if (!hotel) {
+      pushToast('Отель не найден');
+      return false;
+    }
+
+    syncHotels(hotels.filter(item => item.id !== hotelId));
+    const nextFavorites = favorites.filter(id => id !== hotelId);
+    const nextRecent = recentlyViewedIds.filter(id => id !== hotelId);
+    const nextCompared = compareIds.filter(id => id !== hotelId);
+    const nextNotes = { ...favoriteNotes };
+    delete nextNotes[hotelId];
+    setFavorites(nextFavorites);
+    setRecentlyViewedIds(nextRecent);
+    setCompareIds(nextCompared);
+    setFavoriteNotes(nextNotes);
+    localStorage.setItem('at_favs', JSON.stringify(nextFavorites));
+    localStorage.setItem('at_recent_hotels', JSON.stringify(nextRecent));
+    localStorage.setItem('at_compare_hotels', JSON.stringify(nextCompared));
+    localStorage.setItem('at_favorite_notes', JSON.stringify(nextNotes));
+    if (editingHotelId === hotelId) {
+      setEditingHotelId(null);
+      setHotelForm({name:'', price:0, image:'', country:'ОАЭ', city:'Дубай', meal:'Ultra All Inclusive', beach: 'Песчаный', stars: 5, description: '', gallery: ''});
+    }
+    if (activeHotel?.id === hotelId) closeHotel();
+
+    logAction('Удаление отеля', `Удалён отель ${hotel.name}; история заявок сохранена`, 'СИСТЕМА');
+    pushToast('Отель удалён; история заявок сохранена');
+    return true;
+  };
 
   const normalizePhone = phone => String(phone || '').replace(/\D/g, '');
   const phonesMatch = (firstPhone, secondPhone) => {
@@ -316,6 +486,10 @@ export default function AstanaTravelApp() {
     const targetUser = touristUsers.find(user => user.id === userId);
     if (!targetUser) {
       pushToast('Аккаунт не найден');
+      return false;
+    }
+    if (targetUser.isBanned) {
+      pushToast('Этот аккаунт заблокирован модератором');
       return false;
     }
 
@@ -543,6 +717,10 @@ export default function AstanaTravelApp() {
       pushToast('Войдите в аккаунт для оформления демо-бронирования');
       return;
     }
+    if (currentUser.isBanned) {
+      pushToast('Ваш аккаунт ограничен модератором');
+      return;
+    }
     const packagePrice = (tourConfig.datePrice || activeHotel.price) * (tourConfig.nights / 7);
     const finalPrice = packagePrice * tourConfig.class * tourConfig.pax;
     const newBooking = {
@@ -559,19 +737,7 @@ export default function AstanaTravelApp() {
     setBookings(newBooks);
     localStorage.setItem('at_books', JSON.stringify(newBooks));
 
-    const updatedUsers = users.map(user => {
-      if (user.id !== currentUser.id) return user;
-      const nextLtv = (Number(user.ltv) || 0) + finalPrice;
-      const nextStatus = user.status === 'Staff'
-        ? 'Staff'
-        : nextLtv >= 1500000
-          ? 'Platinum'
-          : nextLtv >= 500000
-            ? 'Gold'
-            : 'Standard';
-      return { ...user, ltv: nextLtv, status: nextStatus };
-    });
-    syncUsers(updatedUsers);
+    adjustUserLtv(currentUser.id, finalPrice);
 
     logAction('Демо-бронирование', `Пользователь ${currentUser.name} оформил демо-тур в ${activeHotel.name} за ${formatMoney(finalPrice)} ₸`, 'ПОКУПКА');
     
@@ -579,20 +745,70 @@ export default function AstanaTravelApp() {
     pushToast('Демо-бронирование оформлено. Оплата не производилась.');
   };
 
-  const cancelBooking = (bookingId) => {
-    const updated = bookings.map(booking => booking.id === bookingId
-      ? { ...booking, status: 'cancelled_demo' }
-      : booking);
+  const cancelBooking = (bookingId, cancellationDetails = {}) => {
+    const booking = bookings.find(item => item.id === bookingId);
+    if (!booking) {
+      pushToast('Заявка не найдена');
+      return;
+    }
+    if (booking.status === 'cancelled_demo') {
+      pushToast('Заявка уже отменена');
+      return;
+    }
+    const cancellation = {
+      cancelledAt: new Date().toISOString(),
+      cancelledBy: String(cancellationDetails.cancelledBy || (role === 'admin' ? 'Администратор' : currentUser?.name || 'Пользователь')),
+      reason: String(cancellationDetails.reason || '').trim() || 'Причина не указана',
+      note: String(cancellationDetails.note || '').trim()
+    };
+    const cancellationHistory = [...(booking.cancellationHistory || []), cancellation];
+    const updated = bookings.map(item => item.id === bookingId
+      ? { ...item, status: 'cancelled_demo', cancellation, cancellationHistory }
+      : item);
     setBookings(updated);
     localStorage.setItem('at_books', JSON.stringify(updated));
-    logAction('Отмена демо-брони', `Демо-бронирование ${bookingId} отменено`, 'ПОКУПКА');
+    adjustUserLtv(booking.user?.id, -(Number(booking.price) || 0));
+    logAction(
+      'Отмена демо-брони',
+      `Демо-бронирование ${bookingId} отменено. Причина: ${cancellation.reason}${cancellation.note ? `. Комментарий: ${cancellation.note}` : ''}`,
+      'ПОКУПКА'
+    );
     pushToast('Демо-бронирование отменено');
+  };
+
+  const restoreBooking = (bookingId) => {
+    const booking = bookings.find(item => item.id === bookingId);
+    if (!booking) {
+      pushToast('Заявка не найдена');
+      return;
+    }
+    if (booking.status !== 'cancelled_demo') {
+      pushToast('Заявка уже активна');
+      return;
+    }
+    const updated = bookings.map(item => item.id === bookingId
+      ? { ...item, status: 'confirmed_demo' }
+      : item);
+    setBookings(updated);
+    localStorage.setItem('at_books', JSON.stringify(updated));
+    adjustUserLtv(booking.user?.id, Number(booking.price) || 0);
+    logAction('Восстановление демо-брони', `Демо-бронирование ${bookingId} восстановлено`, 'ПОКУПКА');
+    pushToast('Демо-заявка восстановлена');
   };
 
   // -- МАССОВОЕ УПРАВЛЕНИЕ ЦЕНАМИ --
   const applyBulkPrice = () => {
     if (!Number.isFinite(bulkConfig.percent) || bulkConfig.percent < -90 || bulkConfig.percent > 500) {
       pushToast('Укажите изменение цены от -90% до 500%');
+      return;
+    }
+    if (bulkConfig.percent === 0) {
+      pushToast('Укажите изменение цены, отличное от 0%');
+      return;
+    }
+    const affectedHotels = hotels.filter(h => bulkConfig.country === 'ALL' || h.country === bulkConfig.country);
+    if (affectedHotels.length === 0) {
+      pushToast('Для выбранной страны нет отелей в каталоге');
       return;
     }
     const multiplier = 1 + (bulkConfig.percent / 100);
@@ -609,35 +825,58 @@ export default function AstanaTravelApp() {
 
   // -- СОХРАНЕНИЕ / РЕДАКТИРОВАНИЕ ОТЕЛЯ В АДМИНКЕ --
   const handleSaveHotel = () => {
-    if(!hotelForm.name) return pushToast('Введите название отеля!');
-    const gallery = hotelForm.gallery.split(/\r?\n/).map(url => url.trim()).filter(Boolean);
-    const photoUrls = [hotelForm.image, ...gallery].filter(Boolean);
+    const name = String(hotelForm.name || '').trim();
+    const selectedCountry = findDestinationCountry(destinationDirectory, hotelForm.country);
+    const selectedCity = selectedCountry
+      ? findDestinationCity(destinationDirectory, selectedCountry.name, hotelForm.city)
+      : null;
+    const country = selectedCountry?.name || '';
+    const city = selectedCity?.name || '';
+    const price = Number(hotelForm.price);
+    const stars = Number(hotelForm.stars);
+    if (!name) return pushToast('Введите название отеля');
+    if (!country || !city) return pushToast('Выберите страну и город из справочника');
+    if (!Number.isFinite(price) || price <= 0) return pushToast('Цена должна быть больше нуля');
+    if (!Number.isInteger(stars) || stars < 3 || stars > 5) return pushToast('Выберите категорию отеля от 3 до 5 звёзд');
+
+    const normalizedForm = { ...hotelForm, name, country, city, price, stars };
+    const gallery = String(hotelForm.gallery || '').split(/\r?\n/).map(url => url.trim()).filter(Boolean);
+    const image = String(hotelForm.image || '').trim();
+    const photoUrls = [image, ...gallery].filter(Boolean);
     
     if (editingHotelId) {
       const updated = hotels.map(h => {
         if (h.id !== editingHotelId) return h;
-        const photos = photoUrls.map(url => h.photos?.find(photo => photo.url === url) || { url, alt: hotelForm.name });
+        const photos = photoUrls.map(url => h.photos?.find(photo => photo.url === url) || { url, alt: name });
         return {
           ...h,
-          ...hotelForm,
+          ...normalizedForm,
+          image,
           gallery,
           photos,
-          price: Number(hotelForm.price),
-          stars: Number(hotelForm.stars)
         };
       });
+      const updatedHotel = updated.find(hotel => hotel.id === editingHotelId);
+      if (!updatedHotel) {
+        pushToast('Отель не найден, обновление отменено');
+        return;
+      }
       syncHotels(updated);
+      const updatedBookings = bookings.map(booking => (
+        booking.hotel?.id === editingHotelId ? { ...booking, hotel: updatedHotel } : booking
+      ));
+      setBookings(updatedBookings);
+      localStorage.setItem('at_books', JSON.stringify(updatedBookings));
       pushToast('Информация об отеле успешно обновлена!');
-      logAction('Редактирование', `Изменены данные отеля: ${hotelForm.name}`, 'СИСТЕМА');
+      logAction('Редактирование', `Изменены данные отеля: ${name}`, 'СИСТЕМА');
       setEditingHotelId(null);
     } else {
       const newH = { 
         id: `h-custom-${Date.now()}`, 
-        ...hotelForm, 
+        ...normalizedForm,
+        image,
         gallery,
-        photos: photoUrls.map(url => ({ url, alt: hotelForm.name })),
-        price: Number(hotelForm.price), 
-        stars: Number(hotelForm.stars), 
+        photos: photoUrls.map(url => ({ url, alt: name })),
         rating: null,
         roomsLeft: null,
         viewers: null,
@@ -645,7 +884,7 @@ export default function AstanaTravelApp() {
       };
       syncHotels([newH, ...hotels]);
       pushToast('Новый отель добавлен в базу!'); 
-      logAction('Создание', `Добавлен новый отель: ${hotelForm.name}`, 'СИСТЕМА');
+      logAction('Создание', `Добавлен новый отель: ${name}`, 'СИСТЕМА');
     }
     setHotelForm({name:'', price:0, image:'', country:'ОАЭ', city:'Дубай', meal:'Ultra All Inclusive', beach: 'Песчаный', stars: 5, description: '', gallery: ''});
   };
@@ -669,11 +908,20 @@ export default function AstanaTravelApp() {
 
   // -- ФУНКЦИИ МОДЕРАЦИИ (CRM / ОТЗЫВЫ) --
   const toggleBlockUser = (userId) => {
-    const updated = users.map(u => u.id === userId ? { ...u, isBanned: !u.isBanned } : u);
+    const selectedUser = users.find(user => user.id === userId);
+    if (!selectedUser || selectedUser.status === 'Staff') {
+      pushToast('Служебную учётную запись нельзя блокировать');
+      return;
+    }
+    const isBanned = !selectedUser.isBanned;
+    const updated = users.map(user => user.id === userId ? { ...user, isBanned } : user);
     syncUsers(updated);
-    const user = updated.find(u => u.id === userId);
-    logAction('Модерация', `Пользователь ${user.name} ${user.isBanned ? 'ЗАБЛОКИРОВАН' : 'РАЗБЛОКИРОВАН'}`, 'МОДЕРАЦИЯ');
-    pushToast(user.isBanned ? 'Пользователь заблокирован' : 'Пользователь разблокирован');
+    logAction('Модерация', `Пользователь ${selectedUser.name} ${isBanned ? 'ЗАБЛОКИРОВАН' : 'РАЗБЛОКИРОВАН'}`, 'МОДЕРАЦИЯ');
+    if (isBanned && currentUserId === userId) {
+      setCurrentUserId('');
+      localStorage.setItem('at_current_user_id', '');
+    }
+    pushToast(isBanned ? 'Пользователь заблокирован' : 'Пользователь разблокирован');
   };
 
   const submitReview = (hotelId, rating, text) => {
@@ -727,9 +975,14 @@ export default function AstanaTravelApp() {
   };
 
   const deleteReview = (hotelId, reviewId) => {
+    const hotel = hotels.find(item => item.id === hotelId);
+    if (!hotel?.reviews?.some(review => review.id === reviewId)) {
+      pushToast('Отзыв не найден');
+      return;
+    }
     const newHotels = hotels.map(h => {
       if (h.id === hotelId) {
-        const reviews = h.reviews.filter(r => r.id !== reviewId);
+        const reviews = (h.reviews || []).filter(r => r.id !== reviewId);
         const averageRating = reviews.length
           ? reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length
           : null;
@@ -744,12 +997,20 @@ export default function AstanaTravelApp() {
   };
 
   const replyToReview = (hotelId, reviewId) => {
-    const reply = adminReplyText[reviewId];
-    if (!reply) return;
+    const reply = String(adminReplyText[reviewId] || '').trim();
+    if (!reply) {
+      pushToast('Введите текст ответа');
+      return;
+    }
+    const hotel = hotels.find(item => item.id === hotelId);
+    if (!hotel?.reviews?.some(review => review.id === reviewId)) {
+      pushToast('Отзыв не найден');
+      return;
+    }
     const newHotels = hotels.map(h => {
       if (h.id === hotelId) {
         return {
-          ...h, reviews: h.reviews.map(r => r.id === reviewId ? { ...r, adminReply: reply } : r)
+          ...h, reviews: (h.reviews || []).map(r => r.id === reviewId ? { ...r, adminReply: reply } : r)
         };
       }
       return h;
@@ -796,7 +1057,15 @@ export default function AstanaTravelApp() {
 
   // -- ЛОГИКА ФИЛЬТРАЦИИ КАТАЛОГА --
   const filteredCatalog = hotels.filter(h => {
-    const searchableText = `${h.name} ${h.city} ${h.country} ${h.locationDescription || ''}`.toLowerCase();
+    const countryDestination = findDestinationCountry(destinationDirectory, h.country);
+    const cityDestination = countryDestination
+      ? findDestinationCity(destinationDirectory, countryDestination.name, h.city)
+      : null;
+    const destinationAliases = [
+      ...(countryDestination?.aliases || []),
+      ...(cityDestination?.aliases || [])
+    ].join(' ');
+    const searchableText = `${h.name} ${h.city} ${h.country} ${h.locationDescription || ''} ${destinationAliases}`.toLowerCase();
     const matchesSearch = searchableText.includes(search.trim().toLowerCase());
     const matchesDestination = !appliedDestination
       || searchableText.includes(appliedDestination.toLowerCase());
@@ -826,9 +1095,10 @@ export default function AstanaTravelApp() {
     .filter(Boolean);
 
   const filteredLogs = logs.filter(l => logFilter === 'ALL' || l.type === logFilter);
-  const allReviews = hotels.flatMap(h => h.reviews.map(r => ({ ...r, hotelName: h.name, hotelId: h.id })));
+  const allReviews = hotels.flatMap(h => (h.reviews || []).map(r => ({ ...r, hotelName: h.name, hotelId: h.id })));
   const app = {
     role, activeTab, setActiveTab: navigateToTab, hotels, favorites, bookings, users, touristUsers, currentUser,
+    destinationDirectory, addDestinationCountry, addDestinationCity,
     switchAccount, loginWithPhone, registerAccount, updateCurrentProfile,
     search, setSearch, filterCountry, setFilterCountry, filterCity, setFilterCity,
     filterMeal, setFilterMeal, maxPrice, setMaxPrice, sortOrder, setSortOrder,
@@ -843,8 +1113,8 @@ export default function AstanaTravelApp() {
     COUNTRIES, CITIES, MEAL_TYPES, formatMoney, filteredCatalog, favoriteHotels, favoriteNotes,
     recentlyViewedHotels, comparedHotels, compareIds, filteredLogs, allReviews,
     pushToast, toggleFav, clearFavorites, updateFavoriteNote, toggleCompare, clearCompare,
-    resetFilters, confirmBooking, cancelBooking, applyBulkPrice, handleSaveHotel, handleEditHotel,
-    syncHotels, logAction, toggleBlockUser, deleteReview, replyToReview, likeReview, submitReview
+    resetFilters, confirmBooking, cancelBooking, restoreBooking, applyBulkPrice, handleSaveHotel, handleEditHotel,
+    syncHotels, deleteHotel, logAction, toggleBlockUser, deleteReview, replyToReview, likeReview, submitReview
   };
 
   return (
