@@ -22,7 +22,7 @@ export default function AdminWorkspace({ app }) {
     toggleBlockUser, allReviews, adminReplyText, setAdminReplyText,
     replyToReview, deleteReview, cancelBooking, restoreBooking, setActiveTab,
     CITIES, locationForm, setLocationForm, saveLocation, cancellationForm,
-    setCancellationForm
+    setCancellationForm, locationAliases
   } = app;
   const activeBookings = bookings.filter(booking => booking.status !== 'cancelled_demo');
   const cancelledBookings = bookings.length - activeBookings.length;
@@ -249,6 +249,7 @@ export default function AdminWorkspace({ app }) {
                   {matchingBookings.map(booking => {
                     const trip = booking.trip || {};
                     const isCancelled = booking.status === 'cancelled_demo';
+                    const priceBreakdown = booking.priceBreakdown || {};
                     const checkIn = trip.departureDate
                       ? new Date(`${trip.departureDate}T00:00:00`).toLocaleDateString('ru-RU')
                       : 'Даты не указаны';
@@ -287,6 +288,33 @@ export default function AdminWorkspace({ app }) {
                             </button>
                           )}
                         </div>
+                        <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 dark:border-slate-800 sm:grid-cols-2 xl:grid-cols-4">
+                          <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-950">
+                            <p className="text-[10px] font-bold uppercase text-slate-400">Клиент</p>
+                            <p className="mt-1 text-sm font-bold">{booking.user?.name || 'Не указан'}</p>
+                            <p className="mt-1 text-xs text-slate-500">{booking.user?.phone || 'Телефон не указан'}</p>
+                            {booking.user?.email && <p className="mt-1 truncate text-xs text-slate-500">{booking.user.email}</p>}
+                          </div>
+                          <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-950">
+                            <p className="text-[10px] font-bold uppercase text-slate-400">Отель и направление</p>
+                            <p className="mt-1 text-sm font-bold">{booking.hotel?.name || 'Не указан'}</p>
+                            <p className="mt-1 text-xs text-slate-500">{booking.hotel?.country || 'Страна не указана'} · {booking.hotel?.city || 'Город не указан'} · {booking.hotel?.stars || 0}★</p>
+                            <p className="mt-1 text-xs text-slate-500">Питание: {priceBreakdown.mealPlan || booking.hotel?.meal || 'Не указано'}</p>
+                          </div>
+                          <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-950">
+                            <p className="text-[10px] font-bold uppercase text-slate-400">Размещение и перелёт</p>
+                            <p className="mt-1 text-sm font-bold">{priceBreakdown.roomType || 'Вариант размещения'}</p>
+                            <p className="mt-1 text-xs text-slate-500">Класс: {priceBreakdown.flightClass || 'Эконом'}</p>
+                            <p className="mt-1 text-xs text-slate-500">Взрослых: {trip.adults ?? 0} · Детей: {trip.children ?? 0}</p>
+                          </div>
+                          <div className="rounded-xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
+                            <p className="text-[10px] font-bold uppercase text-emerald-600">Расчёт стоимости</p>
+                            <p className="mt-1 text-sm">База отеля: <b>{formatMoney(priceBreakdown.baseHotelPrice ?? booking.hotel?.price ?? 0)} ₸</b></p>
+                            <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Демо-пакет: {formatMoney(priceBreakdown.packagePrice ?? 0)} ₸</p>
+                            {Number(priceBreakdown.classSurcharge) > 0 && <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Бизнес-класс: +{formatMoney(priceBreakdown.classSurcharge)} ₸</p>}
+                            <p className="mt-2 text-base font-black text-emerald-700 dark:text-emerald-300">Итого: {formatMoney(booking.price || 0)} ₸</p>
+                          </div>
+                        </div>
                         {isCancelled && booking.cancellation && (
                           <div className="mt-4 grid gap-2 rounded-xl bg-slate-50 p-4 text-xs sm:grid-cols-2 dark:bg-slate-950">
                             <p><span className="text-slate-500">Причина:</span> <b>{booking.cancellation.reason}</b></p>
@@ -316,14 +344,17 @@ export default function AdminWorkspace({ app }) {
                     <label htmlFor="location-country" className="text-xs font-bold text-slate-500">Страна / направление</label>
                     <input id="location-country" list="location-countries" value={locationForm.country} onChange={event => setLocationForm({...locationForm, country: event.target.value, city: ''})} placeholder="Например, ОАЭ или Дубай (ОАЭ)" className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
                     <datalist id="location-countries">
-                      {COUNTRIES.map(country => <option key={country} value={country} />)}
+                      {[...new Set([...COUNTRIES, ...Object.keys(locationAliases?.countries || {})])].sort((a, b) => a.localeCompare(b, 'ru')).map(country => <option key={country} value={country} />)}
                     </datalist>
                   </div>
                   <div>
                     <label htmlFor="location-city" className="text-xs font-bold text-slate-500">Город / курорт</label>
                     <input id="location-city" list="location-cities" value={locationForm.city} onChange={event => setLocationForm({...locationForm, city: event.target.value})} placeholder="Например, Дубай" className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
                     <datalist id="location-cities">
-                      {(CITIES[locationForm.country] || []).map(city => <option key={city} value={city} />)}
+                      {[...new Set([
+                        ...(CITIES[locationForm.country] || []),
+                        ...(locationAliases?.cities ? Object.keys(locationAliases.cities) : [])
+                      ])].sort((a, b) => a.localeCompare(b, 'ru')).map(city => <option key={city} value={city} />)}
                     </datalist>
                   </div>
                   <div>

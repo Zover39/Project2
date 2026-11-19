@@ -595,10 +595,22 @@ export default function AstanaTravelApp() {
     }
     const packagePrice = (tourConfig.datePrice || activeHotel.price) * (tourConfig.nights / 7);
     const finalPrice = packagePrice * tourConfig.class * tourConfig.pax;
+    const hotelCost = packagePrice * tourConfig.pax;
+    const classSurcharge = hotelCost * (tourConfig.class - 1);
     const newBooking = {
       id: 'PNR-' + Math.floor(Math.random()*90000),
       hotel: activeHotel,
       price: finalPrice,
+      priceBreakdown: {
+        baseHotelPrice: Number(activeHotel.price) || 0,
+        packagePrice,
+        hotelCost,
+        classSurcharge,
+        finalPrice,
+        flightClass: tourConfig.class === 1.5 ? 'Бизнес' : 'Эконом',
+        roomType: tourConfig.roomType || activeHotel.roomTypes?.[0] || 'Вариант размещения',
+        mealPlan: tourConfig.mealPlan || activeHotel.meal || ''
+      },
       date: new Date().toLocaleDateString('ru-RU'),
       user: currentUser,
       status: 'confirmed_demo',
