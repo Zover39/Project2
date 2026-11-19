@@ -1,10 +1,16 @@
 import { useState } from 'react';
 import {
   ArrowUpRight, CheckCircle2, ClipboardList, DollarSign, Edit3, History, Hotel,
-  MessageSquare, Search, ShieldCheck, Star, Trash2, UserCheck, UserX, Users, XCircle,
-  MapPin, Plus, RotateCcw
+  Download, MessageSquare, Search, ShieldCheck, Star, Trash2, UserCheck, UserX, Users, XCircle
 } from 'lucide-react';
 import CountryFlightMap from './CountryFlightMap';
+import { buildBookingsCsv } from '../../utils/csv';
+
+const formatDateTime = value => {
+  if (!value) return 'Не указано';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('ru-RU');
+};
 
 export default function AdminWorkspace({ app }) {
   const [bookingSearch, setBookingSearch] = useState('');
@@ -12,17 +18,24 @@ export default function AdminWorkspace({ app }) {
   const [hotelSearch, setHotelSearch] = useState('');
   const [hotelCountryFilter, setHotelCountryFilter] = useState('ALL');
   const [hotelCityFilter, setHotelCityFilter] = useState('ALL');
+  const [hotelStarsFilter, setHotelStarsFilter] = useState('ALL');
+  const [hotelMealFilter, setHotelMealFilter] = useState('ALL');
+  const [hotelSort, setHotelSort] = useState('recommended');
   const [userSearch, setUserSearch] = useState('');
   const [reviewFilter, setReviewFilter] = useState('ALL');
+  const [directoryCountry, setDirectoryCountry] = useState(app.COUNTRIES[0] || '');
+  const [newCountryName, setNewCountryName] = useState('');
+  const [newCountryAliases, setNewCountryAliases] = useState('');
+  const [newCityName, setNewCityName] = useState('');
+  const [newCityAliases, setNewCityAliases] = useState('');
   const {
-    activeTab, users, bookings, formatMoney, bulkConfig, setBulkConfig,
-    COUNTRIES, applyBulkPrice, hotelForm, setHotelForm, MEAL_TYPES,
+    activeTab, touristUsers, bookings, formatMoney, bulkConfig, setBulkConfig,
+    COUNTRIES, CITIES, destinationDirectory, addDestinationCountry, addDestinationCity,
+    applyBulkPrice, hotelForm, setHotelForm, MEAL_TYPES,
     editingHotelId, handleSaveHotel, setEditingHotelId, hotels, handleEditHotel,
-    syncHotels, pushToast, logAction, filteredLogs, logFilter, setLogFilter,
+    deleteHotel, pushToast, filteredLogs, logFilter, setLogFilter,
     toggleBlockUser, allReviews, adminReplyText, setAdminReplyText,
-    replyToReview, deleteReview, cancelBooking, restoreBooking, setActiveTab,
-    CITIES, locationForm, setLocationForm, saveLocation, cancellationForm,
-    setCancellationForm, locationAliases
+    replyToReview, deleteReview, cancelBooking, restoreBooking, setActiveTab
   } = app;
   const activeBookings = bookings.filter(booking => booking.status !== 'cancelled_demo');
   const cancelledBookings = bookings.length - activeBookings.length;
@@ -45,64 +58,73 @@ export default function AdminWorkspace({ app }) {
     ].some(value => String(value || '').toLowerCase().includes(query));
     return matchesStatus && matchesSearch;
   });
-  const matchingHotels = hotels.filter(hotel => {
-    const matchesSearch = `${hotel.name} ${hotel.city} ${hotel.country}`
-      .toLowerCase()
-      .includes(hotelSearch.trim().toLowerCase());
-    const matchesCountry = hotelCountryFilter === 'ALL' || hotel.country === hotelCountryFilter;
-    const matchesCity = hotelCityFilter === 'ALL' || hotel.city === hotelCityFilter;
-    return matchesSearch && matchesCountry && matchesCity;
-  });
-  const matchingUsers = users.filter(user =>
-    `${user.name} ${user.phone} ${user.status}`.toLowerCase().includes(userSearch.trim().toLowerCase())
+  const matchingHotels = hotels
+    .filter(hotel => {
+      const country = destinationDirectory.find(item => item.name === hotel.country);
+      const city = country?.cities.find(item => item.name === hotel.city);
+      const aliases = [...(country?.aliases || []), ...(city?.aliases || [])].join(' ');
+      return `${hotel.name} ${hotel.city} ${hotel.country} ${hotel.meal} ${aliases}`.toLowerCase().includes(hotelSearch.trim().toLowerCase());
+    })
+    .filter(hotel => hotelCountryFilter === 'ALL' || hotel.country === hotelCountryFilter)
+    .filter(hotel => hotelCityFilter === 'ALL' || hotel.city === hotelCityFilter)
+    .filter(hotel => hotelStarsFilter === 'ALL' || String(hotel.stars) === hotelStarsFilter)
+    .filter(hotel => hotelMealFilter === 'ALL' || hotel.meal === hotelMealFilter)
+    .sort((first, second) => hotelSort === 'price-asc'
+      ? first.price - second.price
+      : hotelSort === 'price-desc'
+        ? second.price - first.price
+        : 0);
+  const hotelCountryOptions = Array.from(new Set([...COUNTRIES, ...hotels.map(hotel => hotel.country).filter(Boolean)]));
+  const hotelCityOptions = hotelCountryFilter === 'ALL'
+    ? Array.from(new Set(hotels.map(hotel => hotel.city).filter(Boolean)))
+    : CITIES[hotelCountryFilter] || [];
+  const selectedDirectoryCountry = destinationDirectory.find(country => country.name === directoryCountry);
+  const availableCountries = Array.from(new Set([
+    ...COUNTRIES,
+    ...hotels.map(hotel => hotel.country).filter(Boolean)
+  ]));
+  const matchingUsers = touristUsers.filter(user =>
+    `${user.name} ${user.phone} ${user.email || ''} ${user.status}`.toLowerCase().includes(userSearch.trim().toLowerCase())
   );
   const matchingReviews = allReviews.filter(review =>
     reviewFilter === 'ALL' || (reviewFilter === 'UNANSWERED' ? !review.adminReply : Boolean(review.adminReply))
   );
+  const handleAddCountry = event => {
+    event.preventDefault();
+    const country = addDestinationCountry(newCountryName, newCountryAliases);
+    if (!country) return;
+    setDirectoryCountry(country);
+    setHotelForm(form => ({ ...form, country, city: CITIES[country]?.[0] || '' }));
+    setNewCountryName('');
+    setNewCountryAliases('');
+  };
+  const handleAddCity = event => {
+    event.preventDefault();
+    const city = addDestinationCity(directoryCountry, newCityName, newCityAliases);
+    if (!city) return;
+    setHotelForm(form => ({ ...form, country: directoryCountry, city }));
+    setNewCityName('');
+    setNewCityAliases('');
+  };
+  const exportBookings = () => {
+    if (matchingBookings.length === 0) {
+      pushToast('Нет заявок для выгрузки');
+      return;
+    }
+    const blob = new Blob([buildBookingsCsv(matchingBookings)], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `astana-travel-bookings-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    pushToast(`Выгружено заявок: ${matchingBookings.length}`);
+  };
 
   return (
     <>
-      {cancellationForm.bookingId && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-rose-500">Отмена заявки</p>
-                <h3 className="mt-1 text-xl font-black">Укажите детали отмены</h3>
-              </div>
-              <button onClick={() => setCancellationForm({...cancellationForm, bookingId: null})} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Закрыть">
-                <XCircle className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="mt-5 space-y-4">
-              <label className="block text-xs font-bold text-slate-500">Причина
-                <select value={cancellationForm.reason} onChange={event => setCancellationForm({...cancellationForm, reason: event.target.value})} className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950">
-                  <option value="">Выберите причину</option>
-                  <option value="Отказ клиента от поездки">Отказ клиента от поездки</option>
-                  <option value="Изменение дат или отеля">Изменение дат или отеля</option>
-                  <option value="Нет места в отеле">Нет места в отеле</option>
-                  <option value="Ошибка оформления">Ошибка оформления</option>
-                  <option value="Другое">Другое</option>
-                </select>
-              </label>
-              <label className="block text-xs font-bold text-slate-500">Статус возврата
-                <select value={cancellationForm.refund} onChange={event => setCancellationForm({...cancellationForm, refund: event.target.value})} className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950">
-                  <option value="NOT_REQUIRED">Не требуется</option>
-                  <option value="PENDING">Ожидает решения</option>
-                  <option value="REFUND">Возврат оформлен</option>
-                </select>
-              </label>
-              <label className="block text-xs font-bold text-slate-500">Комментарий менеджера
-                <textarea value={cancellationForm.comment} onChange={event => setCancellationForm({...cancellationForm, comment: event.target.value})} placeholder="Дополнительная информация..." rows="3" className="mt-1 w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
-              </label>
-              <div className="flex gap-2 pt-1">
-                <button onClick={() => setCancellationForm({...cancellationForm, bookingId: null})} className="flex-1 rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold dark:bg-slate-800">Назад</button>
-                <button onClick={() => cancellationForm.reason && cancelBooking(cancellationForm.bookingId, cancellationForm)} disabled={!cancellationForm.reason} className="flex-1 rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">Отменить заявку</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
           <div className="space-y-6 animate-in fade-in">
             {/* 1. DASHBOARD */}
             {activeTab === 'admin-dash' && (
@@ -122,7 +144,7 @@ export default function AdminWorkspace({ app }) {
                   {[
                     { label: 'Демо-заявки', value: bookings.length, note: `${activeBookings.length} активных`, icon: ClipboardList, color: 'text-indigo-500', action: 'admin-bookings' },
                     { label: 'Сумма демо-заявок', value: `${formatMoney(demoRequestTotal)} ₸`, note: 'Не выручка, оплаты нет', icon: DollarSign, color: 'text-emerald-500', action: 'admin-bookings' },
-                    { label: 'Клиенты CRM', value: users.length, note: `${users.filter(user => user.isBanned).length} ограничено`, icon: Users, color: 'text-rose-500', action: 'admin-crm' },
+                    { label: 'Клиенты CRM', value: touristUsers.length, note: `${touristUsers.filter(user => user.isBanned).length} ограничено`, icon: Users, color: 'text-rose-500', action: 'admin-crm' },
                     { label: 'Отели в каталоге', value: hotels.length, note: `${allReviews.length} отзывов`, icon: Hotel, color: 'text-amber-500', action: 'admin-hotels' }
                   ].map(card => (
                     <button key={card.label} onClick={() => setActiveTab(card.action)} className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
@@ -205,14 +227,17 @@ export default function AdminWorkspace({ app }) {
                       <label htmlFor="bulk-price-country" className="text-xs font-bold text-slate-500">Страна</label>
                       <select id="bulk-price-country" value={bulkConfig.country} onChange={e=>setBulkConfig({...bulkConfig, country: e.target.value})} className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-sm dark:border-slate-700 dark:bg-slate-800">
                         <option value="ALL">Весь каталог</option>
-                        {COUNTRIES.map(country => <option key={country} value={country}>{country}</option>)}
+                        {availableCountries.map(country => <option key={country} value={country}>{country}</option>)}
                       </select>
                     </div>
                     <div className="w-full">
                       <label htmlFor="bulk-price-percent" className="text-xs font-bold text-slate-500">Изменение цены (%)</label>
                       <input id="bulk-price-percent" type="number" min="-90" max="500" value={bulkConfig.percent} onChange={e=>setBulkConfig({...bulkConfig, percent: Number(e.target.value)})} className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-sm dark:border-slate-700 dark:bg-slate-800" />
                     </div>
-                    <button onClick={applyBulkPrice} className="w-full whitespace-nowrap rounded-lg bg-slate-900 px-6 py-2.5 font-bold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 sm:w-auto">Применить к демо-каталогу</button>
+                    <button onClick={() => {
+                      const target = bulkConfig.country === 'ALL' ? 'всему каталогу' : `стране «${bulkConfig.country}»`;
+                      if (window.confirm(`Изменить цены на ${bulkConfig.percent}% для ${target}?`)) applyBulkPrice();
+                    }} className="w-full whitespace-nowrap rounded-lg bg-slate-900 px-6 py-2.5 font-bold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 sm:w-auto">Применить к демо-каталогу</button>
                   </div>
                 </section>
               </>
@@ -227,10 +252,15 @@ export default function AdminWorkspace({ app }) {
                     <h2 className="mt-1 text-3xl font-black">Заявки и бронирования</h2>
                     <p className="mt-1 text-sm text-slate-500">Все записи локальные и демонстрационные — оплаты и связи с отелями нет.</p>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="rounded-xl bg-white px-3 py-2 shadow-sm dark:bg-slate-900"><p className="text-lg font-black">{bookings.length}</p><p className="text-[10px] text-slate-500">Всего</p></div>
-                    <div className="rounded-xl bg-white px-3 py-2 shadow-sm dark:bg-slate-900"><p className="text-lg font-black text-emerald-600">{activeBookings.length}</p><p className="text-[10px] text-slate-500">Активно</p></div>
-                    <div className="rounded-xl bg-white px-3 py-2 shadow-sm dark:bg-slate-900"><p className="text-lg font-black text-slate-500">{cancelledBookings}</p><p className="text-[10px] text-slate-500">Отменено</p></div>
+                  <div className="flex flex-col gap-2 sm:items-end">
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="rounded-xl bg-white px-3 py-2 shadow-sm dark:bg-slate-900"><p className="text-lg font-black">{bookings.length}</p><p className="text-[10px] text-slate-500">Всего</p></div>
+                      <div className="rounded-xl bg-white px-3 py-2 shadow-sm dark:bg-slate-900"><p className="text-lg font-black text-emerald-600">{activeBookings.length}</p><p className="text-[10px] text-slate-500">Активно</p></div>
+                      <div className="rounded-xl bg-white px-3 py-2 shadow-sm dark:bg-slate-900"><p className="text-lg font-black text-slate-500">{cancelledBookings}</p><p className="text-[10px] text-slate-500">Отменено</p></div>
+                    </div>
+                    <button type="button" onClick={exportBookings} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800">
+                      <Download className="h-4 w-4" /> Скачать CSV
+                    </button>
                   </div>
                 </div>
                 <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:flex-row">
@@ -249,7 +279,8 @@ export default function AdminWorkspace({ app }) {
                   {matchingBookings.map(booking => {
                     const trip = booking.trip || {};
                     const isCancelled = booking.status === 'cancelled_demo';
-                    const priceBreakdown = booking.priceBreakdown || {};
+                    const cancellationHistory = booking.cancellationHistory
+                      || (booking.cancellation ? [booking.cancellation] : []);
                     const checkIn = trip.departureDate
                       ? new Date(`${trip.departureDate}T00:00:00`).toLocaleDateString('ru-RU')
                       : 'Даты не указаны';
@@ -277,52 +308,64 @@ export default function AdminWorkspace({ app }) {
                             <span className="text-slate-500">Гости / ночи</span><span className="font-bold">{trip.pax || 0} / {trip.nights || 0}</span>
                             <span className="text-slate-500">Демо-сумма</span><span className="font-black">{formatMoney(booking.price || 0)} ₸</span>
                           </div>
-                          {!isCancelled && (
-                            <button onClick={() => setCancellationForm({ bookingId: booking.id, reason: '', comment: '', refund: 'NOT_REQUIRED' })} className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 px-4 py-2.5 text-xs font-bold text-rose-600 transition hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-950/40">
+                          {isCancelled ? (
+                            <button onClick={() => restoreBooking(booking.id)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 px-4 py-2.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-900 dark:text-emerald-300 dark:hover:bg-emerald-950/40">
+                              <CheckCircle2 className="h-4 w-4" /> Восстановить демо-заявку
+                            </button>
+                          ) : (
+                            <button onClick={() => {
+                              if (window.confirm(`Отменить демо-заявку ${booking.id}?`)) {
+                                cancelBooking(booking.id, { reason: 'Отменено администратором', cancelledBy: 'Администратор' });
+                              }
+                            }} className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 px-4 py-2.5 text-xs font-bold text-rose-600 transition hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-950/40">
                               <XCircle className="h-4 w-4" /> Отменить демо-заявку
                             </button>
                           )}
-                          {isCancelled && (
-                            <button onClick={() => restoreBooking(booking.id)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 px-4 py-2.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-900 dark:hover:bg-emerald-950/40">
-                              <RotateCcw className="h-4 w-4" /> Восстановить
-                            </button>
-                          )}
                         </div>
-                        <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 dark:border-slate-800 sm:grid-cols-2 xl:grid-cols-4">
-                          <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-950">
-                            <p className="text-[10px] font-bold uppercase text-slate-400">Клиент</p>
-                            <p className="mt-1 text-sm font-bold">{booking.user?.name || 'Не указан'}</p>
-                            <p className="mt-1 text-xs text-slate-500">{booking.user?.phone || 'Телефон не указан'}</p>
-                            {booking.user?.email && <p className="mt-1 truncate text-xs text-slate-500">{booking.user.email}</p>}
+                        <details open={isCancelled} className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-800">
+                          <summary className="cursor-pointer text-xs font-bold text-indigo-600 dark:text-indigo-400">Полная информация и история заявки</summary>
+                          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                            {[
+                              ['Клиент', booking.user?.name || 'Не указан'],
+                              ['Телефон', booking.user?.phone || 'Не указан'],
+                              ['Email', booking.user?.email || 'Не указан'],
+                              ['Отель', booking.hotel?.name || 'Отель не указан'],
+                              ['Направление', [booking.hotel?.country, booking.hotel?.city].filter(Boolean).join(', ') || 'Не указано'],
+                              ['Питание', booking.hotel?.meal || 'Не указано'],
+                              ['Заезд', checkIn],
+                              ['Выезд', checkOut || 'Не указан'],
+                              ['Гости', `${trip.adults ?? trip.pax ?? 0} взрослых · ${trip.children ?? 0} детей · ${trip.pax ?? 0} всего`],
+                              ['Ночей', trip.nights ?? 'Не указано'],
+                              ['Тариф', trip.class === 1.5 ? 'Бизнес' : trip.class ? 'Эконом' : 'Не указан'],
+                              ['Создана', booking.date || 'Не указана'],
+                              ['Статус оплаты', 'Не оплачено · демо'],
+                              ['Сумма заявки', `${formatMoney(booking.price || 0)} ₸`]
+                            ].map(([label, value]) => (
+                              <div key={label} className="rounded-lg bg-slate-50 p-3 dark:bg-slate-950">
+                                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</p>
+                                <p className="mt-1 break-words text-xs font-semibold">{value}</p>
+                              </div>
+                            ))}
                           </div>
-                          <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-950">
-                            <p className="text-[10px] font-bold uppercase text-slate-400">Отель и направление</p>
-                            <p className="mt-1 text-sm font-bold">{booking.hotel?.name || 'Не указан'}</p>
-                            <p className="mt-1 text-xs text-slate-500">{booking.hotel?.country || 'Страна не указана'} · {booking.hotel?.city || 'Город не указан'} · {booking.hotel?.stars || 0}★</p>
-                            <p className="mt-1 text-xs text-slate-500">Питание: {priceBreakdown.mealPlan || booking.hotel?.meal || 'Не указано'}</p>
+                          <div className="mt-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+                            <h4 className="text-xs font-bold">История отмены</h4>
+                            {cancellationHistory.length > 0 ? (
+                              <ol className="mt-2 space-y-2">
+                                {cancellationHistory.map((cancellation, index) => (
+                                  <li key={`${booking.id}-cancel-${index}`} className="rounded-lg bg-rose-50 p-3 text-xs dark:bg-rose-950/20">
+                                    <p className="font-bold text-rose-700 dark:text-rose-300">
+                                      {formatDateTime(cancellation.cancelledAt)} · {cancellation.cancelledBy || 'Пользователь'}
+                                    </p>
+                                    <p className="mt-1">Причина: {cancellation.reason || 'не указана'}</p>
+                                    {cancellation.note && <p className="mt-1 text-slate-600 dark:text-slate-400">Комментарий: {cancellation.note}</p>}
+                                  </li>
+                                ))}
+                              </ol>
+                            ) : (
+                              <p className="mt-2 text-xs text-slate-500">Заявка не отменялась.</p>
+                            )}
                           </div>
-                          <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-950">
-                            <p className="text-[10px] font-bold uppercase text-slate-400">Размещение и перелёт</p>
-                            <p className="mt-1 text-sm font-bold">{priceBreakdown.roomType || 'Вариант размещения'}</p>
-                            <p className="mt-1 text-xs text-slate-500">Класс: {priceBreakdown.flightClass || 'Эконом'}</p>
-                            <p className="mt-1 text-xs text-slate-500">Взрослых: {trip.adults ?? 0} · Детей: {trip.children ?? 0}</p>
-                          </div>
-                          <div className="rounded-xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
-                            <p className="text-[10px] font-bold uppercase text-emerald-600">Расчёт стоимости</p>
-                            <p className="mt-1 text-sm">База отеля: <b>{formatMoney(priceBreakdown.baseHotelPrice ?? booking.hotel?.price ?? 0)} ₸</b></p>
-                            <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Демо-пакет: {formatMoney(priceBreakdown.packagePrice ?? 0)} ₸</p>
-                            {Number(priceBreakdown.classSurcharge) > 0 && <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Бизнес-класс: +{formatMoney(priceBreakdown.classSurcharge)} ₸</p>}
-                            <p className="mt-2 text-base font-black text-emerald-700 dark:text-emerald-300">Итого: {formatMoney(booking.price || 0)} ₸</p>
-                          </div>
-                        </div>
-                        {isCancelled && booking.cancellation && (
-                          <div className="mt-4 grid gap-2 rounded-xl bg-slate-50 p-4 text-xs sm:grid-cols-2 dark:bg-slate-950">
-                            <p><span className="text-slate-500">Причина:</span> <b>{booking.cancellation.reason}</b></p>
-                            <p><span className="text-slate-500">Отменил:</span> <b>{booking.cancellation.cancelledBy}</b></p>
-                            <p><span className="text-slate-500">Возврат:</span> <b>{{ NOT_REQUIRED: 'Не требуется', PENDING: 'Ожидает решения', REFUND: 'Возврат оформлен' }[booking.cancellation.refund] || 'Не указан'}</b></p>
-                            {booking.cancellation.comment && <p className="sm:col-span-2"><span className="text-slate-500">Комментарий:</span> {booking.cancellation.comment}</p>}
-                          </div>
-                        )}
+                        </details>
                       </article>
                     );
                   })}
@@ -339,49 +382,16 @@ export default function AdminWorkspace({ app }) {
                   <h2 className="mt-1 text-3xl font-black">Управление отелями</h2>
                   <p className="mt-1 text-sm text-slate-500">Добавляйте и обновляйте карточки локального демо-каталога.</p>
                 </div>
-                <div className="grid grid-cols-1 gap-4 rounded-3xl border border-indigo-100 bg-indigo-50/60 p-5 dark:border-indigo-900/60 dark:bg-indigo-950/20 lg:grid-cols-2">
-                  <div>
-                    <label htmlFor="location-country" className="text-xs font-bold text-slate-500">Страна / направление</label>
-                    <input id="location-country" list="location-countries" value={locationForm.country} onChange={event => setLocationForm({...locationForm, country: event.target.value, city: ''})} placeholder="Например, ОАЭ или Дубай (ОАЭ)" className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
-                    <datalist id="location-countries">
-                      {[...new Set([...COUNTRIES, ...Object.keys(locationAliases?.countries || {})])].sort((a, b) => a.localeCompare(b, 'ru')).map(country => <option key={country} value={country} />)}
-                    </datalist>
-                  </div>
-                  <div>
-                    <label htmlFor="location-city" className="text-xs font-bold text-slate-500">Город / курорт</label>
-                    <input id="location-city" list="location-cities" value={locationForm.city} onChange={event => setLocationForm({...locationForm, city: event.target.value})} placeholder="Например, Дубай" className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
-                    <datalist id="location-cities">
-                      {[...new Set([
-                        ...(CITIES[locationForm.country] || []),
-                        ...(locationAliases?.cities ? Object.keys(locationAliases.cities) : [])
-                      ])].sort((a, b) => a.localeCompare(b, 'ru')).map(city => <option key={city} value={city} />)}
-                    </datalist>
-                  </div>
-                  <div>
-                    <label htmlFor="location-country-aliases" className="text-xs font-bold text-slate-500">Синонимы страны через запятую</label>
-                    <input id="location-country-aliases" value={locationForm.countryAliases || ''} onChange={event => setLocationForm({...locationForm, countryAliases: event.target.value})} placeholder="Dubai, Emirates, ОАЭ" className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
-                  </div>
-                  <div>
-                    <label htmlFor="location-city-aliases" className="text-xs font-bold text-slate-500">Синонимы города через запятую</label>
-                    <input id="location-city-aliases" value={locationForm.cityAliases || ''} onChange={event => setLocationForm({...locationForm, cityAliases: event.target.value})} placeholder="Dubai, Дубаи, Dubayy" className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
-                  </div>
-                  <div className="lg:col-span-2">
-                    <p className="mb-2 text-xs text-slate-500">Добавленные направления остаются в общем списке и доступны в фильтрах каталога.</p>
-                  </div>
-                  <button onClick={saveLocation} className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white hover:bg-indigo-700 lg:col-span-2">
-                    <Plus className="h-4 w-4" /> Добавить в справочник
-                  </button>
-                </div>
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-8">
                   <div className="w-full md:w-1/3">
                     <h3 className="font-bold mb-4 text-xl">{editingHotelId ? 'Редактировать отель' : 'Добавить новый отель'}</h3>
-                    <div className="space-y-3 text-sm">
+                    <form onSubmit={event => { event.preventDefault(); handleSaveHotel(); }} className="space-y-3 text-sm">
                       <label htmlFor="hotel-name" className="block text-xs font-semibold text-slate-500">Название отеля</label>
-                      <input id="hotel-name" type="text" placeholder="Введите название отеля" value={hotelForm.name} onChange={e=>setHotelForm({...hotelForm, name:e.target.value})} className="w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none focus:border-indigo-500 font-bold" />
+                      <input id="hotel-name" type="text" maxLength="120" required placeholder="Введите название отеля" value={hotelForm.name} onChange={e=>setHotelForm({...hotelForm, name:e.target.value})} className="w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none focus:border-indigo-500 font-bold" />
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label htmlFor="hotel-price" className="block text-xs font-semibold text-slate-500">Базовая цена (₸)</label>
-                          <input id="hotel-price" type="number" placeholder="Введите цену" value={hotelForm.price} onChange={e=>setHotelForm({...hotelForm, price:Number(e.target.value)})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none focus:border-indigo-500" />
+                          <input id="hotel-price" type="number" min="1" step="1" required placeholder="Введите цену" value={hotelForm.price} onChange={e=>setHotelForm({...hotelForm, price:e.target.value === '' ? '' : Number(e.target.value)})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none focus:border-indigo-500" />
                         </div>
                         <div>
                           <label htmlFor="hotel-stars" className="block text-xs font-semibold text-slate-500">Количество звёзд</label>
@@ -395,17 +405,20 @@ export default function AdminWorkspace({ app }) {
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label htmlFor="hotel-country" className="block text-xs font-semibold text-slate-500">Страна</label>
-                          <input id="hotel-country" list="hotel-countries" type="text" placeholder="Выберите или введите страну" value={hotelForm.country} onChange={e=>setHotelForm({...hotelForm, country: e.target.value, city: ''})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none" />
-                          <datalist id="hotel-countries">
-                            {COUNTRIES.map(country => <option key={country} value={country} />)}
-                          </datalist>
+                          <select id="hotel-country" required value={hotelForm.country} onChange={event => {
+                            const country = event.target.value;
+                            setHotelForm({ ...hotelForm, country, city: CITIES[country]?.[0] || '' });
+                          }} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none">
+                            <option value="">Выберите страну</option>
+                            {COUNTRIES.map(country => <option key={country} value={country}>{country}</option>)}
+                          </select>
                         </div>
                         <div>
                           <label htmlFor="hotel-city" className="block text-xs font-semibold text-slate-500">Город</label>
-                          <input id="hotel-city" list="hotel-cities" type="text" placeholder="Выберите или введите город" value={hotelForm.city} onChange={e=>setHotelForm({...hotelForm, city: e.target.value})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none" />
-                          <datalist id="hotel-cities">
-                            {(CITIES[hotelForm.country] || []).map(city => <option key={city} value={city} />)}
-                          </datalist>
+                          <select id="hotel-city" required value={hotelForm.city} onChange={event => setHotelForm({ ...hotelForm, city: event.target.value })} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none">
+                            <option value="">Выберите город</option>
+                            {(CITIES[hotelForm.country] || []).map(city => <option key={city} value={city}>{city}</option>)}
+                          </select>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
@@ -434,48 +447,81 @@ export default function AdminWorkspace({ app }) {
                       </div>
 
                       <div className="flex gap-2 pt-2">
-                        <button onClick={handleSaveHotel} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-3 rounded-xl transition shadow-md">
+                        <button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-3 rounded-xl transition shadow-md">
                           {editingHotelId ? 'Сохранить изменения' : 'Создать отель'}
                         </button>
                         {editingHotelId && (
-                          <button onClick={() => { setEditingHotelId(null); setHotelForm({name:'', price:0, image:'', country:'ОАЭ', city:'Дубай', meal:'Ultra All Inclusive', beach: 'Песчаный', stars: 5, description: '', gallery: ''}); }} className="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold p-3 rounded-xl transition hover:bg-slate-300 dark:hover:bg-slate-700">
+                          <button type="button" onClick={() => { setEditingHotelId(null); setHotelForm({name:'', price:0, image:'', country:'ОАЭ', city:'Дубай', meal:'Ultra All Inclusive', beach: 'Песчаный', stars: 5, description: '', gallery: ''}); }} className="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold p-3 rounded-xl transition hover:bg-slate-300 dark:hover:bg-slate-700">
                             Отмена
                           </button>
                         )}
                       </div>
-                    </div>
+                    </form>
                   </div>
                   <div className="w-full md:w-2/3">
-                    <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                      <label className="relative sm:col-span-1">
+                    <label className="relative mb-3 block">
                       <span className="sr-only">Поиск отеля в каталоге</span>
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       <input value={hotelSearch} onChange={event => setHotelSearch(event.target.value)} placeholder="Найти отель, город или страну" className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
-                      </label>
-                      <select aria-label="Фильтр каталога по стране" value={hotelCountryFilter} onChange={event => { setHotelCountryFilter(event.target.value); setHotelCityFilter('ALL'); }} className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm dark:border-slate-700 dark:bg-slate-950">
+                    </label>
+                    <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                      <select aria-label="Фильтр по стране" value={hotelCountryFilter} onChange={event => {
+                        setHotelCountryFilter(event.target.value);
+                        setHotelCityFilter('ALL');
+                      }} className="rounded-lg border border-slate-200 bg-white p-2 text-xs dark:border-slate-700 dark:bg-slate-950">
                         <option value="ALL">Все страны</option>
-                        {COUNTRIES.map(country => <option key={country} value={country}>{country}</option>)}
+                        {hotelCountryOptions.map(country => <option key={country} value={country}>{country}</option>)}
                       </select>
-                      <select aria-label="Фильтр каталога по городу" value={hotelCityFilter} onChange={event => setHotelCityFilter(event.target.value)} disabled={hotelCountryFilter === 'ALL'} className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950">
+                      <select aria-label="Фильтр по городу" value={hotelCityFilter} onChange={event => setHotelCityFilter(event.target.value)} className="rounded-lg border border-slate-200 bg-white p-2 text-xs dark:border-slate-700 dark:bg-slate-950">
                         <option value="ALL">Все города</option>
-                        {hotelCountryFilter !== 'ALL' && (CITIES[hotelCountryFilter] || []).map(city => <option key={city} value={city}>{city}</option>)}
+                        {hotelCityOptions.map(city => <option key={city} value={city}>{city}</option>)}
                       </select>
+                      <select aria-label="Фильтр по звёздам" value={hotelStarsFilter} onChange={event => setHotelStarsFilter(event.target.value)} className="rounded-lg border border-slate-200 bg-white p-2 text-xs dark:border-slate-700 dark:bg-slate-950">
+                        <option value="ALL">Любая категория</option>
+                        {[3, 4, 5].map(stars => <option key={stars} value={String(stars)}>{stars} звезды</option>)}
+                      </select>
+                      <select aria-label="Фильтр по питанию" value={hotelMealFilter} onChange={event => setHotelMealFilter(event.target.value)} className="rounded-lg border border-slate-200 bg-white p-2 text-xs dark:border-slate-700 dark:bg-slate-950">
+                        <option value="ALL">Любое питание</option>
+                        {MEAL_TYPES.map(meal => <option key={meal} value={meal}>{meal}</option>)}
+                      </select>
+                      <select aria-label="Сортировка отелей" value={hotelSort} onChange={event => setHotelSort(event.target.value)} className="rounded-lg border border-slate-200 bg-white p-2 text-xs dark:border-slate-700 dark:bg-slate-950">
+                        <option value="recommended">Порядок каталога</option>
+                        <option value="price-asc">Сначала дешевле</option>
+                        <option value="price-desc">Сначала дороже</option>
+                      </select>
+                      <button type="button" onClick={() => {
+                        setHotelSearch('');
+                        setHotelCountryFilter('ALL');
+                        setHotelCityFilter('ALL');
+                        setHotelStarsFilter('ALL');
+                        setHotelMealFilter('ALL');
+                        setHotelSort('recommended');
+                      }} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                        Сбросить фильтры
+                      </button>
                     </div>
+                    <p className="mb-2 text-xs text-slate-500">Показано {matchingHotels.length} из {hotels.length} отелей</p>
                     <div className="max-h-[650px] space-y-2 overflow-y-auto rounded-2xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/50">
                     {matchingHotels.map(h => (
                       <div key={h.id} className="flex justify-between items-center p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:shadow-md transition-shadow">
                         <div className="flex items-center gap-4">
-                          <img src={h.image} className="w-16 h-16 rounded-lg object-cover" alt="img" />
+                          <img src={h.image || ''} className="w-16 h-16 rounded-lg object-cover" alt={h.name} />
                           <div>
                             <p className="font-bold text-base">{h.name} {'★'.repeat(h.stars)}</p>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{formatMoney(h.price)} ₸ • {h.country}, {h.city} • {h.meal}</p>
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <button onClick={() => handleEditHotel(h)} className="text-indigo-500 p-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 rounded-lg transition" title="Редактировать">
+                          <button type="button" onClick={() => handleEditHotel(h)} aria-label={`Редактировать отель ${h.name}`} className="text-indigo-500 p-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 rounded-lg transition" title="Редактировать">
                             <Edit3 className="w-5 h-5" />
                           </button>
-                          <button onClick={() => {syncHotels(hotels.filter(x=>x.id!==h.id)); pushToast('Отель удален'); logAction('Удаление', `Удален отель ${h.name}`, 'СИСТЕМА');}} className="text-rose-500 p-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 rounded-lg transition" title="Удалить">
+                          <button type="button" onClick={() => {
+                            const linkedBookings = bookings.filter(booking => booking.hotel?.id === h.id).length;
+                            const historyNote = linkedBookings
+                              ? ` Связанные заявки (${linkedBookings}) сохранятся в истории.`
+                              : '';
+                            if (window.confirm(`Удалить отель «${h.name}»?${historyNote}`)) deleteHotel(h.id);
+                          }} aria-label={`Удалить отель ${h.name}`} className="text-rose-500 p-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 rounded-lg transition" title="Удалить">
                             <Trash2 className="w-5 h-5" />
                           </button>
                         </div>
@@ -485,6 +531,53 @@ export default function AdminWorkspace({ app }) {
                     </div>
                   </div>
                 </div>
+                <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+                  <div className="mb-5">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-indigo-500">Справочник</p>
+                    <h3 className="mt-1 text-xl font-black">Страны, города и варианты написания</h3>
+                    <p className="mt-1 text-sm text-slate-500">Отели выбираются по единому названию. Синонимы вроде «Дубаи» и «Dubai» привязываются к городу «Дубай», не создавая дублей.</p>
+                  </div>
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <form onSubmit={handleAddCountry} className="space-y-3 rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
+                      <h4 className="font-bold">Добавить страну или вариант написания</h4>
+                      <label htmlFor="directory-country-name" className="block text-xs font-semibold text-slate-500">Название страны</label>
+                      <input id="directory-country-name" required maxLength="80" value={newCountryName} onChange={event => setNewCountryName(event.target.value)} placeholder="Например, ОАЭ" className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-900" />
+                      <label htmlFor="directory-country-aliases" className="block text-xs font-semibold text-slate-500">Синонимы через запятую (необязательно)</label>
+                      <input id="directory-country-aliases" maxLength="240" value={newCountryAliases} onChange={event => setNewCountryAliases(event.target.value)} placeholder="UAE, Объединённые Арабские Эмираты" className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-900" />
+                      <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-indigo-700">Добавить страну / синоним</button>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {COUNTRIES.map(country => (
+                          <span key={country} className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">{country}</span>
+                        ))}
+                      </div>
+                    </form>
+
+                    <div className="space-y-3 rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
+                      <h4 className="font-bold">Города выбранной страны</h4>
+                      <label htmlFor="directory-city-country" className="block text-xs font-semibold text-slate-500">Страна</label>
+                      <select id="directory-city-country" value={directoryCountry} onChange={event => setDirectoryCountry(event.target.value)} className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-900">
+                        {COUNTRIES.map(country => <option key={country} value={country}>{country}</option>)}
+                      </select>
+                      {selectedDirectoryCountry?.aliases?.length > 0 && (
+                        <p className="text-xs text-slate-500">Варианты названия: {selectedDirectoryCountry.aliases.join(', ')}</p>
+                      )}
+                      <form onSubmit={handleAddCity} className="space-y-3 border-t border-slate-200 pt-3 dark:border-slate-800">
+                        <label htmlFor="directory-city-name" className="block text-xs font-semibold text-slate-500">Город или его новое написание</label>
+                        <input id="directory-city-name" required maxLength="80" value={newCityName} onChange={event => setNewCityName(event.target.value)} placeholder="Например, Дубай или Дубаи" className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-900" />
+                        <label htmlFor="directory-city-aliases" className="block text-xs font-semibold text-slate-500">Дополнительные синонимы через запятую</label>
+                        <input id="directory-city-aliases" maxLength="240" value={newCityAliases} onChange={event => setNewCityAliases(event.target.value)} placeholder="Dubai, Dubayy" className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-900" />
+                        <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-indigo-700">Добавить город / синоним</button>
+                      </form>
+                      <div className="flex flex-wrap gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
+                        {(selectedDirectoryCountry?.cities || []).map(city => (
+                          <span key={city.name} className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                            {city.name}{city.aliases.length ? ` · ${city.aliases.join(', ')}` : ''}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </section>
               </div>
             )}
 
@@ -494,7 +587,7 @@ export default function AdminWorkspace({ app }) {
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                   <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <h3 className="font-bold text-lg flex items-center gap-2"><UserCheck className="w-5 h-5 text-indigo-500"/> CRM и пользователи</h3>
-                    <span className="text-xs text-slate-500">{users.length} профилей · {users.filter(user => user.isBanned).length} ограничено</span>
+                    <span className="text-xs text-slate-500">{touristUsers.length} клиентов · {touristUsers.filter(user => user.isBanned).length} ограничено</span>
                   </div>
                   <label className="relative mb-4 block">
                     <span className="sr-only">Поиск пользователя</span>
@@ -513,7 +606,7 @@ export default function AdminWorkspace({ app }) {
                           </div>
                           <div className="text-right">
                             <p className="font-black text-sm text-emerald-600">{formatMoney(u.ltv)} ₸</p>
-                            <p className="text-[10px] text-slate-500">Покупок: {userBookings.length}</p>
+                            <p className="text-[10px] text-slate-500">Активных демо-заявок: {userBookings.filter(booking => booking.status !== 'cancelled_demo').length}</p>
                           </div>
                         </div>
                         {userBookings.length > 0 && (
@@ -524,7 +617,7 @@ export default function AdminWorkspace({ app }) {
                           </div>
                         )}
                         <div className="mt-4 flex justify-end">
-                          <button onClick={() => toggleBlockUser(u.id)} className={`text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 ${u.isBanned ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                          <button type="button" onClick={() => toggleBlockUser(u.id)} className={`text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 ${u.isBanned ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
                             {u.isBanned ? <CheckCircle2 className="w-3 h-3"/> : <UserX className="w-3 h-3"/>}
                             {u.isBanned ? 'Разблокировать' : 'Заблокировать'}
                           </button>
@@ -604,7 +697,9 @@ export default function AdminWorkspace({ app }) {
                         </div>
                       )}
                       <div className="flex justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
-                        <button onClick={() => deleteReview(r.hotelId, r.id)} className="text-xs text-rose-500 font-bold flex items-center gap-1 hover:underline"><Trash2 className="w-3 h-3"/> Удалить отзыв</button>
+                        <button type="button" onClick={() => {
+                          if (window.confirm(`Удалить отзыв пользователя ${r.author}?`)) deleteReview(r.hotelId, r.id);
+                        }} className="text-xs text-rose-500 font-bold flex items-center gap-1 hover:underline"><Trash2 className="w-3 h-3"/> Удалить отзыв</button>
                       </div>
                     </div>
                   ))}

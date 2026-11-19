@@ -8,6 +8,61 @@ export const CITIES = {
   "Вьетнам": ["Нячанг", "Фукуок"],
   "Бали": ["Убуд", "Нуса Дуа"]
 };
+export const DESTINATION_ALIASES = {
+  countries: {
+    "ОАЭ": ["AE", "UAE", "Emirates", "United Arab Emirates", "Объединенные Арабские Эмираты"],
+    "Турция": ["TR", "Turkey", "Türkiye", "Turkiye", "Republic of Turkey"],
+    "Таиланд": ["TH", "Thailand", "Kingdom of Thailand"],
+    "Египет": ["EG", "Egypt", "Arab Republic of Egypt"],
+    "Мальдивы": ["MV", "Maldives", "Maldive Islands", "Republic of the Maldives"],
+    "Вьетнам": ["VN", "Vietnam", "Viet Nam", "Socialist Republic of Vietnam"],
+    "Бали": ["Bali"]
+  },
+  cities: {
+    "Дубай": ["Дубаи", "Dubai", "Dubayy"],
+    "Абу-Даби": ["Абу Даби", "Abu Dhabi", "Abu-Dhabi"],
+    "Анталья": ["Анталия", "Antalya"],
+    "Белек": ["Belek"],
+    "Стамбул": ["Istanbul"],
+    "Пхукет": ["Phuket"],
+    "Самуи": ["Koh Samui", "Ko Samui"],
+    "Шарм-эль-Шейх": ["Шарм эль Шейх", "Sharm El Sheikh"],
+    "Хургада": ["Hurghada"],
+    "Мале": ["Male"],
+    "Нячанг": ["Nha Trang"],
+    "Фукуок": ["Phu Quoc"],
+    "Убуд": ["Ubud"],
+    "Нуса Дуа": ["Nusa Dua"]
+  }
+};
+export const POPULAR_COUNTRY_ALIASES = {
+  "ОАЭ": ["AE", "UAE", "Emirates", "United Arab Emirates", "Объединенные Арабские Эмираты"],
+  "Турция": ["TR", "Turkey", "Türkiye", "Turkiye", "Republic of Turkey"],
+  "Таиланд": ["TH", "Thailand", "Kingdom of Thailand"],
+  "Египет": ["EG", "Egypt", "Arab Republic of Egypt"],
+  "Мальдивы": ["MV", "Maldives", "Maldive Islands", "Republic of the Maldives"],
+  "Вьетнам": ["VN", "Vietnam", "Viet Nam", "Socialist Republic of Vietnam"],
+  "Индонезия": ["ID", "Indonesia", "Republic of Indonesia"],
+  "Грузия": ["GE", "Georgia", "Sakartvelo"],
+  "Греция": ["GR", "Greece", "Hellenic Republic", "Ellada"],
+  "Кипр": ["CY", "Cyprus", "Republic of Cyprus", "Kypros"],
+  "Италия": ["IT", "Italy", "Italian Republic"],
+  "Испания": ["ES", "Spain", "Kingdom of Spain"],
+  "Франция": ["FR", "France", "French Republic"],
+  "Япония": ["JP", "Japan", "Nippon", "Nihon"],
+  "Катар": ["QA", "Qatar", "State of Qatar"],
+  "Шри-Ланка": ["LK", "Sri Lanka", "Ceylon"],
+  "Сингапур": ["SG", "Singapore", "Republic of Singapore"],
+  "Индия": ["IN", "India", "Bharat"],
+  "Китай": ["CN", "China", "People's Republic of China", "Zhongguo"],
+  "США": ["US", "USA", "United States", "United States of America"],
+  "Великобритания": ["GB", "UK", "United Kingdom", "Great Britain"],
+  "Саудовская Аравия": ["SA", "Saudi Arabia", "Kingdom of Saudi Arabia"],
+  "Казахстан": ["KZ", "Kazakhstan", "Qazaqstan", "Республика Казахстан"],
+  "Азербайджан": ["AZ", "Azerbaijan", "Republic of Azerbaijan"],
+  "Узбекистан": ["UZ", "Uzbekistan", "Republic of Uzbekistan"]
+};
+export const COUNTRY_ALIASES_SOURCE_URL = "https://github.com/mledoze/countries";
 export const MEAL_TYPES = [
   "Ultra All Inclusive",
   "All Inclusive",
