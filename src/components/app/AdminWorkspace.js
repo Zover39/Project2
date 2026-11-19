@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import {
   ArrowUpRight, CheckCircle2, ClipboardList, DollarSign, Edit3, History, Hotel,
-  MessageSquare, Search, ShieldCheck, Star, Trash2, UserCheck, UserX, Users, XCircle
+  MessageSquare, Search, ShieldCheck, Star, Trash2, UserCheck, UserX, Users, XCircle,
+  MapPin, Plus, RotateCcw
 } from 'lucide-react';
 import CountryFlightMap from './CountryFlightMap';
 
@@ -9,6 +10,8 @@ export default function AdminWorkspace({ app }) {
   const [bookingSearch, setBookingSearch] = useState('');
   const [bookingFilter, setBookingFilter] = useState('ALL');
   const [hotelSearch, setHotelSearch] = useState('');
+  const [hotelCountryFilter, setHotelCountryFilter] = useState('ALL');
+  const [hotelCityFilter, setHotelCityFilter] = useState('ALL');
   const [userSearch, setUserSearch] = useState('');
   const [reviewFilter, setReviewFilter] = useState('ALL');
   const {
@@ -17,7 +20,9 @@ export default function AdminWorkspace({ app }) {
     editingHotelId, handleSaveHotel, setEditingHotelId, hotels, handleEditHotel,
     syncHotels, pushToast, logAction, filteredLogs, logFilter, setLogFilter,
     toggleBlockUser, allReviews, adminReplyText, setAdminReplyText,
-    replyToReview, deleteReview, cancelBooking, setActiveTab
+    replyToReview, deleteReview, cancelBooking, restoreBooking, setActiveTab,
+    CITIES, locationForm, setLocationForm, saveLocation, cancellationForm,
+    setCancellationForm
   } = app;
   const activeBookings = bookings.filter(booking => booking.status !== 'cancelled_demo');
   const cancelledBookings = bookings.length - activeBookings.length;
@@ -40,9 +45,14 @@ export default function AdminWorkspace({ app }) {
     ].some(value => String(value || '').toLowerCase().includes(query));
     return matchesStatus && matchesSearch;
   });
-  const matchingHotels = hotels.filter(hotel =>
-    `${hotel.name} ${hotel.city} ${hotel.country}`.toLowerCase().includes(hotelSearch.trim().toLowerCase())
-  );
+  const matchingHotels = hotels.filter(hotel => {
+    const matchesSearch = `${hotel.name} ${hotel.city} ${hotel.country}`
+      .toLowerCase()
+      .includes(hotelSearch.trim().toLowerCase());
+    const matchesCountry = hotelCountryFilter === 'ALL' || hotel.country === hotelCountryFilter;
+    const matchesCity = hotelCityFilter === 'ALL' || hotel.city === hotelCityFilter;
+    return matchesSearch && matchesCountry && matchesCity;
+  });
   const matchingUsers = users.filter(user =>
     `${user.name} ${user.phone} ${user.status}`.toLowerCase().includes(userSearch.trim().toLowerCase())
   );
@@ -52,6 +62,47 @@ export default function AdminWorkspace({ app }) {
 
   return (
     <>
+      {cancellationForm.bookingId && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-rose-500">Отмена заявки</p>
+                <h3 className="mt-1 text-xl font-black">Укажите детали отмены</h3>
+              </div>
+              <button onClick={() => setCancellationForm({...cancellationForm, bookingId: null})} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Закрыть">
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mt-5 space-y-4">
+              <label className="block text-xs font-bold text-slate-500">Причина
+                <select value={cancellationForm.reason} onChange={event => setCancellationForm({...cancellationForm, reason: event.target.value})} className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950">
+                  <option value="">Выберите причину</option>
+                  <option value="Отказ клиента от поездки">Отказ клиента от поездки</option>
+                  <option value="Изменение дат или отеля">Изменение дат или отеля</option>
+                  <option value="Нет места в отеле">Нет места в отеле</option>
+                  <option value="Ошибка оформления">Ошибка оформления</option>
+                  <option value="Другое">Другое</option>
+                </select>
+              </label>
+              <label className="block text-xs font-bold text-slate-500">Статус возврата
+                <select value={cancellationForm.refund} onChange={event => setCancellationForm({...cancellationForm, refund: event.target.value})} className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950">
+                  <option value="NOT_REQUIRED">Не требуется</option>
+                  <option value="PENDING">Ожидает решения</option>
+                  <option value="REFUND">Возврат оформлен</option>
+                </select>
+              </label>
+              <label className="block text-xs font-bold text-slate-500">Комментарий менеджера
+                <textarea value={cancellationForm.comment} onChange={event => setCancellationForm({...cancellationForm, comment: event.target.value})} placeholder="Дополнительная информация..." rows="3" className="mt-1 w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
+              </label>
+              <div className="flex gap-2 pt-1">
+                <button onClick={() => setCancellationForm({...cancellationForm, bookingId: null})} className="flex-1 rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold dark:bg-slate-800">Назад</button>
+                <button onClick={() => cancellationForm.reason && cancelBooking(cancellationForm.bookingId, cancellationForm)} disabled={!cancellationForm.reason} className="flex-1 rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">Отменить заявку</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
           <div className="space-y-6 animate-in fade-in">
             {/* 1. DASHBOARD */}
             {activeTab === 'admin-dash' && (
@@ -226,11 +277,24 @@ export default function AdminWorkspace({ app }) {
                             <span className="text-slate-500">Демо-сумма</span><span className="font-black">{formatMoney(booking.price || 0)} ₸</span>
                           </div>
                           {!isCancelled && (
-                            <button onClick={() => cancelBooking(booking.id)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 px-4 py-2.5 text-xs font-bold text-rose-600 transition hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-950/40">
+                            <button onClick={() => setCancellationForm({ bookingId: booking.id, reason: '', comment: '', refund: 'NOT_REQUIRED' })} className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 px-4 py-2.5 text-xs font-bold text-rose-600 transition hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-950/40">
                               <XCircle className="h-4 w-4" /> Отменить демо-заявку
                             </button>
                           )}
+                          {isCancelled && (
+                            <button onClick={() => restoreBooking(booking.id)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 px-4 py-2.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-900 dark:hover:bg-emerald-950/40">
+                              <RotateCcw className="h-4 w-4" /> Восстановить
+                            </button>
+                          )}
                         </div>
+                        {isCancelled && booking.cancellation && (
+                          <div className="mt-4 grid gap-2 rounded-xl bg-slate-50 p-4 text-xs sm:grid-cols-2 dark:bg-slate-950">
+                            <p><span className="text-slate-500">Причина:</span> <b>{booking.cancellation.reason}</b></p>
+                            <p><span className="text-slate-500">Отменил:</span> <b>{booking.cancellation.cancelledBy}</b></p>
+                            <p><span className="text-slate-500">Возврат:</span> <b>{{ NOT_REQUIRED: 'Не требуется', PENDING: 'Ожидает решения', REFUND: 'Возврат оформлен' }[booking.cancellation.refund] || 'Не указан'}</b></p>
+                            {booking.cancellation.comment && <p className="sm:col-span-2"><span className="text-slate-500">Комментарий:</span> {booking.cancellation.comment}</p>}
+                          </div>
+                        )}
                       </article>
                     );
                   })}
@@ -246,6 +310,36 @@ export default function AdminWorkspace({ app }) {
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-indigo-500">Каталог</p>
                   <h2 className="mt-1 text-3xl font-black">Управление отелями</h2>
                   <p className="mt-1 text-sm text-slate-500">Добавляйте и обновляйте карточки локального демо-каталога.</p>
+                </div>
+                <div className="grid grid-cols-1 gap-4 rounded-3xl border border-indigo-100 bg-indigo-50/60 p-5 dark:border-indigo-900/60 dark:bg-indigo-950/20 lg:grid-cols-2">
+                  <div>
+                    <label htmlFor="location-country" className="text-xs font-bold text-slate-500">Страна / направление</label>
+                    <input id="location-country" list="location-countries" value={locationForm.country} onChange={event => setLocationForm({...locationForm, country: event.target.value, city: ''})} placeholder="Например, ОАЭ или Дубай (ОАЭ)" className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
+                    <datalist id="location-countries">
+                      {COUNTRIES.map(country => <option key={country} value={country} />)}
+                    </datalist>
+                  </div>
+                  <div>
+                    <label htmlFor="location-city" className="text-xs font-bold text-slate-500">Город / курорт</label>
+                    <input id="location-city" list="location-cities" value={locationForm.city} onChange={event => setLocationForm({...locationForm, city: event.target.value})} placeholder="Например, Дубай" className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
+                    <datalist id="location-cities">
+                      {(CITIES[locationForm.country] || []).map(city => <option key={city} value={city} />)}
+                    </datalist>
+                  </div>
+                  <div>
+                    <label htmlFor="location-country-aliases" className="text-xs font-bold text-slate-500">Синонимы страны через запятую</label>
+                    <input id="location-country-aliases" value={locationForm.countryAliases || ''} onChange={event => setLocationForm({...locationForm, countryAliases: event.target.value})} placeholder="Dubai, Emirates, ОАЭ" className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
+                  </div>
+                  <div>
+                    <label htmlFor="location-city-aliases" className="text-xs font-bold text-slate-500">Синонимы города через запятую</label>
+                    <input id="location-city-aliases" value={locationForm.cityAliases || ''} onChange={event => setLocationForm({...locationForm, cityAliases: event.target.value})} placeholder="Dubai, Дубаи, Dubayy" className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <p className="mb-2 text-xs text-slate-500">Добавленные направления остаются в общем списке и доступны в фильтрах каталога.</p>
+                  </div>
+                  <button onClick={saveLocation} className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white hover:bg-indigo-700 lg:col-span-2">
+                    <Plus className="h-4 w-4" /> Добавить в справочник
+                  </button>
                 </div>
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-8">
                   <div className="w-full md:w-1/3">
@@ -270,11 +364,17 @@ export default function AdminWorkspace({ app }) {
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label htmlFor="hotel-country" className="block text-xs font-semibold text-slate-500">Страна</label>
-                          <input id="hotel-country" type="text" placeholder="Введите страну" value={hotelForm.country} onChange={e=>setHotelForm({...hotelForm, country: e.target.value})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none" />
+                          <input id="hotel-country" list="hotel-countries" type="text" placeholder="Выберите или введите страну" value={hotelForm.country} onChange={e=>setHotelForm({...hotelForm, country: e.target.value, city: ''})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none" />
+                          <datalist id="hotel-countries">
+                            {COUNTRIES.map(country => <option key={country} value={country} />)}
+                          </datalist>
                         </div>
                         <div>
                           <label htmlFor="hotel-city" className="block text-xs font-semibold text-slate-500">Город</label>
-                          <input id="hotel-city" type="text" placeholder="Введите город" value={hotelForm.city} onChange={e=>setHotelForm({...hotelForm, city: e.target.value})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none" />
+                          <input id="hotel-city" list="hotel-cities" type="text" placeholder="Выберите или введите город" value={hotelForm.city} onChange={e=>setHotelForm({...hotelForm, city: e.target.value})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none" />
+                          <datalist id="hotel-cities">
+                            {(CITIES[hotelForm.country] || []).map(city => <option key={city} value={city} />)}
+                          </datalist>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
@@ -315,11 +415,21 @@ export default function AdminWorkspace({ app }) {
                     </div>
                   </div>
                   <div className="w-full md:w-2/3">
-                    <label className="relative mb-3 block">
+                    <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      <label className="relative sm:col-span-1">
                       <span className="sr-only">Поиск отеля в каталоге</span>
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       <input value={hotelSearch} onChange={event => setHotelSearch(event.target.value)} placeholder="Найти отель, город или страну" className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
-                    </label>
+                      </label>
+                      <select aria-label="Фильтр каталога по стране" value={hotelCountryFilter} onChange={event => { setHotelCountryFilter(event.target.value); setHotelCityFilter('ALL'); }} className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm dark:border-slate-700 dark:bg-slate-950">
+                        <option value="ALL">Все страны</option>
+                        {COUNTRIES.map(country => <option key={country} value={country}>{country}</option>)}
+                      </select>
+                      <select aria-label="Фильтр каталога по городу" value={hotelCityFilter} onChange={event => setHotelCityFilter(event.target.value)} disabled={hotelCountryFilter === 'ALL'} className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950">
+                        <option value="ALL">Все города</option>
+                        {hotelCountryFilter !== 'ALL' && (CITIES[hotelCountryFilter] || []).map(city => <option key={city} value={city}>{city}</option>)}
+                      </select>
+                    </div>
                     <div className="max-h-[650px] space-y-2 overflow-y-auto rounded-2xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/50">
                     {matchingHotels.map(h => (
                       <div key={h.id} className="flex justify-between items-center p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:shadow-md transition-shadow">

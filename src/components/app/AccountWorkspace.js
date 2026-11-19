@@ -454,9 +454,19 @@ export default function AccountWorkspace({ app }) {
                   {b.status === 'cancelled_demo' ? 'Отменено' : 'Демо подтверждено'}
                 </span>
                 {b.status !== 'cancelled_demo' && (
-                  <button onClick={() => cancelBooking(b.id)} className="ml-2 mt-2 text-xs font-bold text-rose-600 hover:underline">
+                  <button onClick={() => {
+                    const reason = window.prompt('Укажите причину отмены:', 'Отказ клиента от поездки');
+                    if (reason) cancelBooking(b.id, { reason, comment: '', refund: 'NOT_REQUIRED' });
+                  }} className="ml-2 mt-2 text-xs font-bold text-rose-600 hover:underline">
                     Отменить демо-бронирование
                   </button>
+                )}
+                {b.status === 'cancelled_demo' && b.cancellation && (
+                  <div className="mt-3 rounded-xl bg-slate-50 p-3 text-left text-xs text-slate-600 dark:bg-slate-950 dark:text-slate-300">
+                    <p><b>Причина:</b> {b.cancellation.reason}</p>
+                    {b.cancellation.comment && <p className="mt-1"><b>Комментарий:</b> {b.cancellation.comment}</p>}
+                    <p className="mt-1"><b>Возврат:</b> {{ NOT_REQUIRED: 'Не требуется', PENDING: 'Ожидает решения', REFUND: 'Возврат оформлен' }[b.cancellation.refund] || 'Не указан'}</p>
+                  </div>
                 )}
               </div>
             </div>

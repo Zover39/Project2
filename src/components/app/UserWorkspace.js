@@ -20,7 +20,7 @@ export default function UserWorkspace({ app }) {
     destinationQuery, setDestinationQuery, checkInDate, setCheckInDate,
     checkOutDate, setCheckOutDate, adults, children, updateGuestCounts,
     appliedDestination, setAppliedDestination, handleCatalogSearch,
-    COUNTRIES, CITIES, MEAL_TYPES, filteredCatalog, favoriteHotels,
+    COUNTRIES, CITIES, locationAliases, MEAL_TYPES, filteredCatalog, favoriteHotels,
     favorites, openHotel, clearFavorites,
     favoriteNotes, updateFavoriteNote, recentlyViewedHotels,
     compareIds, toggleCompare
@@ -73,8 +73,13 @@ export default function UserWorkspace({ app }) {
                               className="mt-1 w-full bg-transparent text-sm font-bold outline-none placeholder:font-normal placeholder:text-slate-400"
                             />
                             <datalist id="hotel-destinations">
-                              {[...new Set([...COUNTRIES, ...Object.values(CITIES).flat(), ...hotels.map(hotel => hotel.name)])]
-                                .map(destination => <option key={destination} value={destination} />)}
+                              {[...new Set([
+                                ...COUNTRIES,
+                                ...Object.values(CITIES).flat(),
+                                ...hotels.map(hotel => hotel.name),
+                                ...Object.values(locationAliases?.countries || {}).flat(),
+                                ...Object.values(locationAliases?.cities || {}).flat()
+                              ])].map(destination => <option key={destination} value={destination} />)}
                             </datalist>
                           </span>
                         </label>
