@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Calendar, CheckCircle2, Share2, ShieldCheck, Star, ThumbsUp, X } from 'lucide-react';
 import GuestSelector from './GuestSelector';
+import { getPublishedReviews } from '../../utils/reviews';
 
 const getGuestLabel = count => {
   if (count === 1) return 'гость';
@@ -17,10 +18,10 @@ const addNightsToDate = (date, nights) => {
 
 export default function HotelBookingModal({ app }) {
   const {
-    activeHotel, closeHotel, modalTab, setModalTab, checkoutStep,
+    activeHotel, createdBookingId, closeHotel, modalTab, setModalTab, checkoutStep,
     setCheckoutStep, tourConfig, setTourConfig, formatMoney, confirmBooking,
     likeReview, submitReview, role, currentUser, setActiveTab, pushToast,
-    adults, children, updateGuestCounts
+    adults, children, updateGuestCounts, travelerDetails, setTravelerDetails, bookings
   } = app;
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [reviewSearch, setReviewSearch] = useState('');
@@ -41,10 +42,12 @@ export default function HotelBookingModal({ app }) {
   const hotelCost = basePrice * tourConfig.pax;
   const classSurcharge = hotelCost * (tourConfig.class - 1);
   const totalPrice = hotelCost + classSurcharge;
+  const createdBooking = bookings.find(booking => booking.id === createdBookingId);
   const nightOptions = [...new Set([3, 5, 7, 10, 14, tourConfig.nights])].sort((a, b) => a - b);
   const today = new Date();
   const minDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  const visibleReviews = activeHotel ? activeHotel.reviews
+  const publishedReviews = getPublishedReviews(activeHotel?.reviews);
+  const visibleReviews = activeHotel ? publishedReviews
     .filter(review => reviewRating === 'ALL' || review.rating === Number(reviewRating))
     .filter(review => `${review.author} ${review.text}`.toLowerCase().includes(reviewSearch.toLowerCase()))
     .sort((a, b) => reviewSort === 'rating' ? b.rating - a.rating : new Date(b.date.split('.').reverse().join('-')) - new Date(a.date.split('.').reverse().join('-'))) : [];
@@ -118,7 +121,7 @@ export default function HotelBookingModal({ app }) {
             <div className="px-6 pt-6 pb-2 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
               <div className="flex gap-6">
                 <button onClick={()=>setModalTab('info')} className={`pb-3 font-bold text-sm transition-colors ${modalTab==='info' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'}`}>Обзор и бронирование</button>
-                <button onClick={()=>setModalTab('reviews')} className={`pb-3 font-bold text-sm transition-colors flex items-center gap-1 ${modalTab==='reviews' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'}`}>Отзывы <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">{activeHotel.reviews.length}</span></button>
+                <button onClick={()=>setModalTab('reviews')} className={`pb-3 font-bold text-sm transition-colors flex items-center gap-1 ${modalTab==='reviews' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'}`}>Отзывы <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">{publishedReviews.length}</span></button>
               </div>
               <div className="flex gap-2">
                 <button onClick={shareHotel} aria-label="Поделиться ссылкой на отель" className="bg-slate-100 dark:bg-slate-800 p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition">
@@ -244,6 +247,43 @@ export default function HotelBookingModal({ app }) {
                         <GuestSelector adults={adults} children={children} onChange={updateGuestCounts} />
                         <p className="mt-2 text-[11px] text-slate-500">Возраст детей и реальные тарифы не учитываются; в демо каждый гость считается по одной ставке.</p>
                       </div>
+                      <section className="rounded-2xl border border-indigo-100 bg-white p-4 dark:border-indigo-900 dark:bg-slate-900">
+                        <div className="mb-3">
+                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">Участники поездки</h4>
+                          <p className="mt-1 text-[11px] text-slate-500">Имя нужно для заявки. Телефон нужен, чтобы пригласить человека в этот демо-профиль.</p>
+                        </div>
+                        <div className="space-y-3">
+                          {travelerDetails.map((traveler, index) => (
+                            <div key={traveler.id} className="grid gap-2 sm:grid-cols-2">
+                              <label className="text-[11px] font-semibold text-slate-500">
+                                {index === 0 ? 'Покупатель · первый участник' : `${traveler.type === 'child' ? 'Ребёнок' : 'Взрослый'} ${traveler.type === 'child' ? index - adults + 1 : index + 1}`}
+                                <input
+                                  type="text"
+                                  autoComplete="name"
+                                  value={traveler.name}
+                                  onChange={event => setTravelerDetails(previous => previous.map((item, itemIndex) => itemIndex === index ? { ...item, name: event.target.value } : item))}
+                                  className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                  placeholder="Имя и фамилия"
+                                  required
+                                />
+                              </label>
+                              <label className="text-[11px] font-semibold text-slate-500">
+                                Телефон для приглашения · необязательно
+                                <input
+                                  type="tel"
+                                  inputMode="tel"
+                                  autoComplete="off"
+                                  value={traveler.phone}
+                                  onChange={event => setTravelerDetails(previous => previous.map((item, itemIndex) => itemIndex === index ? { ...item, phone: event.target.value } : item))}
+                                  className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                  placeholder="+7 700 000 00 00"
+                                />
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="mt-3 text-[10px] text-slate-500">Не вводите паспортные данные. Телефон не подтверждается SMS; приглашение работает только между демо-профилями в этом браузере.</p>
+                      </section>
                       <div>
                         <label htmlFor="trip-checkin" className="text-xs font-bold text-slate-500 block mb-2">
                           <Calendar className="mr-1 inline h-4 w-4" />Дата заезда
@@ -315,9 +355,27 @@ export default function HotelBookingModal({ app }) {
                       </dl>
                       <p className="text-3xl font-black text-slate-900 dark:text-white mt-3 mb-4">{formatMoney(totalPrice)} ₸</p>
                       <p className="text-[11px] text-slate-500 mb-3">Расчётная демо-цена, не предложение от отеля или туроператора. Актуальную стоимость и состав тура нужно уточнить отдельно.</p>
-                      <button onClick={() => setCheckoutStep(1)} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-500/30 flex justify-center items-center gap-2 transition">
-                        <ShieldCheck className="w-5 h-5"/> Оформить заказ
-                      </button>
+                      {activeHotel.status === 'archived' ? (
+                        <p className="rounded-xl bg-slate-100 p-3 text-center text-sm font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                          Отель снят с публикации. Новые демо-заявки для него не создаются.
+                        </p>
+                      ) : <button onClick={() => {
+                        if (!tourConfig.departureDate || !tourConfig.checkOutDate) {
+                          pushToast('Укажите даты заезда и выезда');
+                          return;
+                        }
+                        if (tourConfig.checkOutDate <= tourConfig.departureDate || tourConfig.departureDate < minDate) {
+                          pushToast('Проверьте даты поездки');
+                          return;
+                        }
+                        if (tourConfig.pax < 1 || tourConfig.pax > 5) {
+                          pushToast('Для демо-расчёта выберите от 1 до 5 гостей');
+                          return;
+                        }
+                        setCheckoutStep(1);
+                      }} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-500/30 flex justify-center items-center gap-2 transition">
+                        <ShieldCheck className="w-5 h-5"/> Перейти к демо-заявке
+                      </button>}
                     </div>
                   </div>
                   </div>
@@ -401,7 +459,7 @@ export default function HotelBookingModal({ app }) {
                       <h3 className="text-2xl font-black text-indigo-900 dark:text-indigo-100">
                         {activeHotel.rating ? `Рейтинг: ${activeHotel.rating} / 5` : 'Пока нет оценок гостей'}
                       </h3>
-                      <p className="text-sm text-indigo-600 dark:text-indigo-300">Отзывы на этом сайте: {activeHotel.reviews.length}</p>
+                      <p className="text-sm text-indigo-600 dark:text-indigo-300">Опубликовано отзывов: {publishedReviews.length}</p>
                     </div>
                     <Star className="w-12 h-12 text-amber-500 fill-amber-500 opacity-20" />
                   </div>
@@ -428,7 +486,7 @@ export default function HotelBookingModal({ app }) {
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
                           <h4 className="font-bold">Оставить отзыв</h4>
-                          <p className="mt-1 text-xs text-slate-500">Отзыв будет опубликован от имени {currentUser.name}.</p>
+                          <p className="mt-1 text-xs text-slate-500">Отзыв будет отправлен на модерацию от имени {currentUser.name}.</p>
                         </div>
                         <button
                           type="button"
@@ -463,7 +521,7 @@ export default function HotelBookingModal({ app }) {
                         />
                       </label>
                       <button type="submit" className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-indigo-700">
-                        Опубликовать отзыв
+                        Отправить на проверку
                       </button>
                     </form>
                   ))}
@@ -489,8 +547,8 @@ export default function HotelBookingModal({ app }) {
                     </label>
                   </div>
                   <div className="space-y-4">
-                    {activeHotel.reviews.length === 0 ? <p className="text-center text-slate-500 py-10">Отзывов пока нет.</p> : null}
-                    {visibleReviews.length === 0 && activeHotel.reviews.length > 0 && <p className="text-center text-slate-500 py-6">Отзывы по выбранным условиям не найдены.</p>}
+                    {publishedReviews.length === 0 ? <p className="text-center text-slate-500 py-10">Опубликованных отзывов пока нет.</p> : null}
+                    {visibleReviews.length === 0 && publishedReviews.length > 0 && <p className="text-center text-slate-500 py-6">Отзывы по выбранным условиям не найдены.</p>}
                     {visibleReviews.map(r => (
                       <div key={r.id} className="p-5 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
                         <div className="flex justify-between items-start">
@@ -503,6 +561,11 @@ export default function HotelBookingModal({ app }) {
                           <button onClick={() => likeReview(activeHotel.id, r.id)} className="flex items-center gap-1 text-xs text-slate-500 hover:text-indigo-600 transition"><ThumbsUp className="w-4 h-4"/> {r.likes}</button>
                         </div>
                         <p className="text-sm text-slate-700 dark:text-slate-300">{r.text}</p>
+                        {r.verifiedStay && (
+                          <span className="inline-block rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                            Подтверждённая демо-поездка
+                          </span>
+                        )}
 
                         {r.adminReply && (
                           <div className="ml-6 mt-4 bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border-l-4 border-indigo-500">
@@ -516,19 +579,25 @@ export default function HotelBookingModal({ app }) {
                 </div>
               )}
 
-              {/* ШАГ 2: KASPI ОПЛАТА */}
+              {/* ШАГ 2: DEMO REQUEST */}
               {checkoutStep === 1 && modalTab === 'info' && (
                 <div className="max-w-md mx-auto text-center space-y-6 py-10 animate-in zoom-in-95">
-                  <div className="w-20 h-20 bg-red-600 rounded-[2rem] text-white flex items-center justify-center font-black text-4xl mx-auto shadow-2xl shadow-red-500/40">K</div>
-                  <h3 className="text-2xl font-bold">Демо-оформление</h3>
-                  <p className="rounded-xl bg-amber-50 p-3 text-sm font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200">Это только демонстрация: Kaspi и реальная оплата не подключены. Деньги списаны не будут.</p>
+                  <div className="w-20 h-20 bg-indigo-600 rounded-[2rem] text-white flex items-center justify-center font-black text-4xl mx-auto shadow-2xl shadow-indigo-500/40">i</div>
+                  <h3 className="text-2xl font-bold">Проверьте демо-заявку</h3>
+                  <p className="rounded-xl bg-amber-50 p-3 text-sm font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200">Это локальная демонстрация: отель, наличие и цена не подтверждаются, оплата не подключена.</p>
                   <p className="text-slate-500 text-sm">Расчётная сумма: <br/><span className="text-3xl font-black text-slate-900 dark:text-white mt-2 block">{formatMoney(totalPrice)} ₸</span></p>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-left text-xs dark:border-slate-800 dark:bg-slate-800/50">
+                    <p className="mb-2 font-bold text-slate-700 dark:text-slate-200">Участники поездки</p>
+                    <ul className="space-y-1 text-slate-600 dark:text-slate-300">
+                      {travelerDetails.map(traveler => <li key={traveler.id}>{traveler.name || 'Имя не указано'} · {traveler.type === 'child' ? 'ребёнок' : 'взрослый'}</li>)}
+                    </ul>
+                  </div>
                   {currentUser ? (
                     <>
                       <p className="text-xs text-slate-500">
                         Оформление на аккаунт: <span className="font-bold text-slate-800 dark:text-slate-200">{currentUser.name}</span> ({currentUser.phone})
                       </p>
-                      <button onClick={confirmBooking} className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-2xl shadow-lg transition">Создать демо-бронирование</button>
+                      <button onClick={confirmBooking} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-lg transition">Создать демо-заявку</button>
                     </>
                   ) : (
                     <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/50">
@@ -553,14 +622,25 @@ export default function HotelBookingModal({ app }) {
                 <div className="max-w-md mx-auto bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 text-center space-y-4 animate-in fade-in relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-2 bg-indigo-600"></div>
                   <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto" />
-                  <h3 className="text-2xl font-black text-indigo-900 dark:text-indigo-400">Демо-ваучер</h3>
-                  <p className="text-xs font-bold text-amber-700 dark:text-amber-300">Демо-заявка сохранена локально. Реальный билет и оплата не оформлялись.</p>
+                  <h3 className="text-2xl font-black text-indigo-900 dark:text-indigo-400">Демо-заявка создана</h3>
+                  <p className="text-xs font-bold text-amber-700 dark:text-amber-300">Новая демо-заявка сохранена только в этом браузере. Это не билет, не подтверждение отеля и не оплата.</p>
+                  {createdBooking?.shareInvites?.length > 0 && (
+                    <p className="rounded-xl border border-indigo-100 bg-indigo-50 p-3 text-xs font-semibold text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-200">
+                      Приглашения созданы: {createdBooking.shareInvites.length}. Они появятся только у демо-профилей с подходящим телефоном в этом же браузере.
+                    </p>
+                  )}
                   <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-left text-sm font-bold text-slate-700 dark:text-slate-300 space-y-2 shadow-sm">
+                    <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2"><span className="text-slate-400">Номер заявки</span> <span>{createdBookingId || '—'}</span></p>
+                    <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2"><span className="text-slate-400">Статус</span> <span>Новая · демо</span></p>
                     <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2"><span className="text-slate-400">Отель</span> <span>{activeHotel.name}</span></p>
                     {tourConfig.roomType && <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2"><span className="text-slate-400">Вариант размещения</span> <span>{tourConfig.roomType}</span></p>}
                     <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2"><span className="text-slate-400">Взрослых</span> <span>{tourConfig.adults ?? adults}</span></p>
                     <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2"><span className="text-slate-400">Детей</span> <span>{tourConfig.children ?? children}</span></p>
                     <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2"><span className="text-slate-400">Всего гостей</span> <span>{tourConfig.pax} чел.</span></p>
+                    <div className="border-b border-slate-100 pb-2 dark:border-slate-800">
+                      <p className="mb-1 text-slate-400">Участники</p>
+                      {(createdBooking?.travelers || []).map(traveler => <p key={traveler.id} className="text-xs font-medium">{traveler.name}</p>)}
+                    </div>
                     <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2"><span className="text-slate-400">Длительность</span> <span>{tourConfig.nights} ночей</span></p>
                     {tourConfig.departureDate && <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2"><span className="text-slate-400">Заезд</span> <span>{new Date(`${tourConfig.departureDate}T00:00:00`).toLocaleDateString('ru-RU')}</span></p>}
                     {tourConfig.checkOutDate && <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2"><span className="text-slate-400">Выезд</span> <span>{new Date(`${tourConfig.checkOutDate}T00:00:00`).toLocaleDateString('ru-RU')}</span></p>}

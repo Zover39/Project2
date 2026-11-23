@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import CountryFlightMap from './CountryFlightMap';
 import { buildBookingsCsv } from '../../utils/csv';
+import { BOOKING_STATUSES, getBookingStatusLabel } from '../../utils/booking';
 
 const formatDateTime = value => {
   if (!value) return 'Не указано';
@@ -21,6 +22,7 @@ export default function AdminWorkspace({ app }) {
   const [hotelStarsFilter, setHotelStarsFilter] = useState('ALL');
   const [hotelMealFilter, setHotelMealFilter] = useState('ALL');
   const [hotelSort, setHotelSort] = useState('recommended');
+  const [hotelStatusFilter, setHotelStatusFilter] = useState('published');
   const [userSearch, setUserSearch] = useState('');
   const [reviewFilter, setReviewFilter] = useState('ALL');
   const [directoryCountry, setDirectoryCountry] = useState(app.COUNTRIES[0] || '');
@@ -29,17 +31,20 @@ export default function AdminWorkspace({ app }) {
   const [newCityName, setNewCityName] = useState('');
   const [newCityAliases, setNewCityAliases] = useState('');
   const {
-    activeTab, touristUsers, bookings, formatMoney, bulkConfig, setBulkConfig,
+    activeTab, touristUsers, bookings, formatMoney, bulkConfig, setBulkConfig, lastBulkPriceChange, undoBulkPrice,
     COUNTRIES, CITIES, destinationDirectory, addDestinationCountry, addDestinationCity,
     applyBulkPrice, hotelForm, setHotelForm, MEAL_TYPES,
     editingHotelId, handleSaveHotel, setEditingHotelId, hotels, handleEditHotel,
-    deleteHotel, pushToast, filteredLogs, logFilter, setLogFilter,
+    setHotelArchived, pushToast, filteredLogs, logFilter, setLogFilter,
     toggleBlockUser, allReviews, adminReplyText, setAdminReplyText,
-    replyToReview, deleteReview, cancelBooking, restoreBooking, setActiveTab
+    replyToReview, deleteReview, moderateReview, cancelBooking, restoreBooking, setBookingStatus, setActiveTab
   } = app;
-  const activeBookings = bookings.filter(booking => booking.status !== 'cancelled_demo');
-  const cancelledBookings = bookings.length - activeBookings.length;
+  const activeBookings = bookings.filter(booking => ['pending_demo', 'confirmed_demo'].includes(booking.status));
+  const cancelledBookings = bookings.filter(booking => booking.status === 'cancelled_demo').length;
   const demoRequestTotal = activeBookings.reduce((sum, booking) => sum + (Number(booking.price) || 0), 0);
+  const affectedBulkHotels = hotels.filter(hotel => bulkConfig.country === 'ALL' || hotel.country === bulkConfig.country);
+  const bulkPriceExample = affectedBulkHotels[0];
+  const bulkPriceMultiplier = 1 + (Number(bulkConfig.percent) / 100);
   const hotelCounts = hotels.reduce((counts, hotel) => {
     counts[hotel.country] = (counts[hotel.country] || 0) + 1;
     return counts;
@@ -47,14 +52,18 @@ export default function AdminWorkspace({ app }) {
   const topCountries = Object.entries(hotelCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const matchingBookings = bookings.filter(booking => {
     const matchesStatus = bookingFilter === 'ALL'
-      || (bookingFilter === 'ACTIVE' ? booking.status !== 'cancelled_demo' : booking.status === 'cancelled_demo');
+      || (bookingFilter === 'ACTIVE' ? ['pending_demo', 'confirmed_demo'].includes(booking.status)
+        : bookingFilter === 'CANCELLED' ? booking.status === 'cancelled_demo'
+          : booking.status === bookingFilter);
     const query = bookingSearch.trim().toLowerCase();
     const matchesSearch = !query || [
       booking.id,
       booking.user?.name,
       booking.hotel?.name,
       booking.hotel?.city,
-      booking.hotel?.country
+      booking.hotel?.country,
+      ...(booking.travelers || []).map(traveler => traveler.name),
+      ...(booking.shareInvites || []).map(invite => invite.phone)
     ].some(value => String(value || '').toLowerCase().includes(query));
     return matchesStatus && matchesSearch;
   });
@@ -65,6 +74,8 @@ export default function AdminWorkspace({ app }) {
       const aliases = [...(country?.aliases || []), ...(city?.aliases || [])].join(' ');
       return `${hotel.name} ${hotel.city} ${hotel.country} ${hotel.meal} ${aliases}`.toLowerCase().includes(hotelSearch.trim().toLowerCase());
     })
+    .filter(hotel => hotelStatusFilter === 'ALL'
+      || (hotelStatusFilter === 'published' ? hotel.status !== 'archived' : hotel.status === 'archived'))
     .filter(hotel => hotelCountryFilter === 'ALL' || hotel.country === hotelCountryFilter)
     .filter(hotel => hotelCityFilter === 'ALL' || hotel.city === hotelCityFilter)
     .filter(hotel => hotelStarsFilter === 'ALL' || String(hotel.stars) === hotelStarsFilter)
@@ -86,9 +97,13 @@ export default function AdminWorkspace({ app }) {
   const matchingUsers = touristUsers.filter(user =>
     `${user.name} ${user.phone} ${user.email || ''} ${user.status}`.toLowerCase().includes(userSearch.trim().toLowerCase())
   );
-  const matchingReviews = allReviews.filter(review =>
-    reviewFilter === 'ALL' || (reviewFilter === 'UNANSWERED' ? !review.adminReply : Boolean(review.adminReply))
-  );
+  const matchingReviews = allReviews.filter(review => {
+    if (reviewFilter === 'PENDING') return review.status === 'pending_review';
+    if (reviewFilter === 'REJECTED') return review.status === 'rejected';
+    if (reviewFilter === 'UNANSWERED') return review.status === 'published' && !review.adminReply;
+    if (reviewFilter === 'ANSWERED') return review.status === 'published' && Boolean(review.adminReply);
+    return true;
+  });
   const handleAddCountry = event => {
     event.preventDefault();
     const country = addDestinationCountry(newCountryName, newCountryAliases);
@@ -142,8 +157,8 @@ export default function AdminWorkspace({ app }) {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                   {[
-                    { label: 'Демо-заявки', value: bookings.length, note: `${activeBookings.length} активных`, icon: ClipboardList, color: 'text-indigo-500', action: 'admin-bookings' },
-                    { label: 'Сумма демо-заявок', value: `${formatMoney(demoRequestTotal)} ₸`, note: 'Не выручка, оплаты нет', icon: DollarSign, color: 'text-emerald-500', action: 'admin-bookings' },
+                    { label: 'Демо-заявки', value: bookings.length, note: `${activeBookings.length} требуют обработки`, icon: ClipboardList, color: 'text-indigo-500', action: 'admin-bookings' },
+                    { label: 'Сумма активных демо-заявок', value: `${formatMoney(demoRequestTotal)} ₸`, note: 'Не выручка: оплаты нет', icon: DollarSign, color: 'text-emerald-500', action: 'admin-bookings' },
                     { label: 'Клиенты CRM', value: touristUsers.length, note: `${touristUsers.filter(user => user.isBanned).length} ограничено`, icon: Users, color: 'text-rose-500', action: 'admin-crm' },
                     { label: 'Отели в каталоге', value: hotels.length, note: `${allReviews.length} отзывов`, icon: Hotel, color: 'text-amber-500', action: 'admin-hotels' }
                   ].map(card => (
@@ -185,8 +200,8 @@ export default function AdminWorkspace({ app }) {
                             <p className="mt-0.5 text-xs text-slate-500">{booking.id} · {booking.user?.name || 'Клиент не указан'} · {booking.date}</p>
                           </div>
                           <div className="flex items-center justify-between gap-3 sm:justify-end">
-                            <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${booking.status === 'cancelled_demo' ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'}`}>
-                              {booking.status === 'cancelled_demo' ? 'Отменена · демо' : 'Активна · демо'}
+                            <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${booking.status === 'cancelled_demo' || booking.status === 'rejected_demo' ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'}`}>
+                              {getBookingStatusLabel(booking.status)}
                             </span>
                             <span className="text-sm font-black">{formatMoney(booking.price || 0)} ₸</span>
                           </div>
@@ -236,8 +251,26 @@ export default function AdminWorkspace({ app }) {
                     </div>
                     <button onClick={() => {
                       const target = bulkConfig.country === 'ALL' ? 'всему каталогу' : `стране «${bulkConfig.country}»`;
-                      if (window.confirm(`Изменить цены на ${bulkConfig.percent}% для ${target}?`)) applyBulkPrice();
+                      const example = bulkPriceExample
+                        ? ` Пример: ${bulkPriceExample.name}, ${formatMoney(bulkPriceExample.price)} → ${formatMoney(Math.round(bulkPriceExample.price * bulkPriceMultiplier))} ₸.`
+                        : '';
+                      if (window.confirm(`Изменить цены на ${bulkConfig.percent}% для ${affectedBulkHotels.length} отелей (${target})?${example}`)) applyBulkPrice();
                     }} className="w-full whitespace-nowrap rounded-lg bg-slate-900 px-6 py-2.5 font-bold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 sm:w-auto">Применить к демо-каталогу</button>
+                    <p className="w-full text-xs text-slate-500">
+                      Будут изменены {affectedBulkHotels.length} отелей.
+                      {bulkPriceExample ? ` Пример: ${formatMoney(bulkPriceExample.price)} → ${formatMoney(Math.round(bulkPriceExample.price * bulkPriceMultiplier))} ₸.` : ''}
+                    </p>
+                    {lastBulkPriceChange && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Вернуть прежние цены для ${lastBulkPriceChange.priceChanges.length} отелей?`)) undoBulkPrice();
+                        }}
+                        className="w-full rounded-lg border border-amber-300 px-4 py-2 text-xs font-bold text-amber-800 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-950/40 sm:w-auto"
+                      >
+                        Отменить последнее массовое изменение
+                      </button>
+                    )}
                   </div>
                 </section>
               </>
@@ -271,8 +304,12 @@ export default function AdminWorkspace({ app }) {
                   </label>
                   <select aria-label="Фильтр заявок" value={bookingFilter} onChange={event => setBookingFilter(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold dark:border-slate-700 dark:bg-slate-950">
                     <option value="ALL">Все заявки</option>
-                    <option value="ACTIVE">Активные</option>
+                    <option value="ACTIVE">Требуют действий</option>
+                    <option value="pending_demo">Новые</option>
+                    <option value="confirmed_demo">Подтверждённые · демо</option>
+                    <option value="completed_demo">Завершённые · демо</option>
                     <option value="CANCELLED">Отменённые</option>
+                    <option value="rejected_demo">Отклонённые · демо</option>
                   </select>
                 </div>
                 <div className="space-y-3">
@@ -295,8 +332,8 @@ export default function AdminWorkspace({ app }) {
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className="font-black">{booking.id}</span>
-                                <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${isCancelled ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'}`}>
-                                  {isCancelled ? 'Отменена · демо' : 'Активна · демо'}
+                                <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${isCancelled || booking.status === 'rejected_demo' ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'}`}>
+                                    {getBookingStatusLabel(booking.status)}
                                 </span>
                               </div>
                               <p className="mt-1 truncate text-sm font-semibold">{booking.hotel?.name || 'Отель не указан'} · {booking.hotel?.city || ''}</p>
@@ -312,7 +349,7 @@ export default function AdminWorkspace({ app }) {
                             <button onClick={() => restoreBooking(booking.id)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 px-4 py-2.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-900 dark:text-emerald-300 dark:hover:bg-emerald-950/40">
                               <CheckCircle2 className="h-4 w-4" /> Восстановить демо-заявку
                             </button>
-                          ) : (
+                          ) : ['pending_demo', 'confirmed_demo'].includes(booking.status) ? (
                             <button onClick={() => {
                               if (window.confirm(`Отменить демо-заявку ${booking.id}?`)) {
                                 cancelBooking(booking.id, { reason: 'Отменено администратором', cancelledBy: 'Администратор' });
@@ -320,6 +357,22 @@ export default function AdminWorkspace({ app }) {
                             }} className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 px-4 py-2.5 text-xs font-bold text-rose-600 transition hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-950/40">
                               <XCircle className="h-4 w-4" /> Отменить демо-заявку
                             </button>
+                          ) : null}
+                          {!isCancelled && (
+                            <label className="sr-only" htmlFor={`booking-status-${booking.id}`}>Статус заявки {booking.id}</label>
+                          )}
+                          {!isCancelled && (
+                            <select
+                              id={`booking-status-${booking.id}`}
+                              value={booking.status}
+                              onChange={event => setBookingStatus(booking.id, event.target.value)}
+                              aria-label={`Изменить статус заявки ${booking.id}`}
+                              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold dark:border-slate-700 dark:bg-slate-950"
+                            >
+                              {BOOKING_STATUSES.filter(status => status.value !== 'cancelled_demo').map(status => (
+                                <option key={status.value} value={status.value}>{status.label}</option>
+                              ))}
+                            </select>
                           )}
                         </div>
                         <details open={isCancelled} className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-800">
@@ -346,6 +399,36 @@ export default function AdminWorkspace({ app }) {
                                 <p className="mt-1 break-words text-xs font-semibold">{value}</p>
                               </div>
                             ))}
+                          </div>
+                          {(booking.travelers?.length > 0 || booking.shareInvites?.length > 0) && (
+                            <div className="mt-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+                              <h4 className="text-xs font-bold">Участники поездки и приглашения</h4>
+                              {booking.travelers?.length > 0 && (
+                                <ul className="mt-2 space-y-1 text-xs">
+                                  {booking.travelers.map(traveler => {
+                                    const invite = (booking.shareInvites || []).find(item => item.travelerIds?.includes(traveler.id));
+                                    return (
+                                      <li key={traveler.id} className="flex flex-wrap justify-between gap-2 rounded-lg bg-slate-50 p-2 dark:bg-slate-950">
+                                        <span>{traveler.name} · {traveler.type === 'child' ? 'ребёнок' : 'взрослый'}{traveler.phone ? ` · ${traveler.phone}` : ''}</span>
+                                        <span className="font-semibold">{invite ? ({ pending: 'Ожидает принятия', accepted: 'Принято', declined: 'Отклонено', revoked: 'Доступ отозван' }[invite.status] || invite.status) : 'Без приглашения'}</span>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              )}
+                            </div>
+                          )}
+                          <div className="mt-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+                            <h4 className="text-xs font-bold">История статусов</h4>
+                            <ol className="mt-2 space-y-2">
+                              {(booking.statusHistory || []).map((entry, index) => (
+                                <li key={`${booking.id}-status-${index}`} className="rounded-lg bg-slate-50 p-3 text-xs dark:bg-slate-950">
+                                  <p className="font-bold">{getBookingStatusLabel(entry.status)}</p>
+                                  <p className="mt-1 text-slate-500">{formatDateTime(entry.changedAt)} · {entry.changedBy || 'Система'}</p>
+                                  {entry.note && <p className="mt-1 text-slate-600 dark:text-slate-400">{entry.note}</p>}
+                                </li>
+                              ))}
+                            </ol>
                           </div>
                           <div className="mt-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
                             <h4 className="text-xs font-bold">История отмены</h4>
@@ -435,7 +518,10 @@ export default function AdminWorkspace({ app }) {
                       </div>
                       <div>
                         <label htmlFor="hotel-image" className="block text-xs font-semibold text-slate-500">Основное фото (URL или Base64)</label>
-                        <input id="hotel-image" type="text" placeholder="Вставьте ссылку на фото" value={hotelForm.image} onChange={e=>setHotelForm({...hotelForm, image:e.target.value})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none" />
+                        <input id="hotel-image" type="text" required placeholder="https://… или image Base64" value={hotelForm.image} onChange={e=>setHotelForm({...hotelForm, image:e.target.value})} className="mt-1 w-full p-3 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-xl focus:outline-none" />
+                        {hotelForm.image && (
+                          <img src={hotelForm.image} alt="Предпросмотр основного фото отеля" className="mt-2 h-32 w-full rounded-xl object-cover" />
+                        )}
                       </div>
                       <div>
                         <label htmlFor="hotel-gallery" className="block text-xs font-semibold text-slate-500">Дополнительные фото (по одному URL в строке)</label>
@@ -465,6 +551,11 @@ export default function AdminWorkspace({ app }) {
                       <input value={hotelSearch} onChange={event => setHotelSearch(event.target.value)} placeholder="Найти отель, город или страну" className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-3 text-sm dark:border-slate-700 dark:bg-slate-950" />
                     </label>
                     <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                      <select aria-label="Статус публикации отеля" value={hotelStatusFilter} onChange={event => setHotelStatusFilter(event.target.value)} className="rounded-lg border border-slate-200 bg-white p-2 text-xs dark:border-slate-700 dark:bg-slate-950">
+                        <option value="published">Опубликованные</option>
+                        <option value="archived">Архив</option>
+                        <option value="ALL">Все статусы</option>
+                      </select>
                       <select aria-label="Фильтр по стране" value={hotelCountryFilter} onChange={event => {
                         setHotelCountryFilter(event.target.value);
                         setHotelCityFilter('ALL');
@@ -507,7 +598,7 @@ export default function AdminWorkspace({ app }) {
                         <div className="flex items-center gap-4">
                           <img src={h.image || ''} className="w-16 h-16 rounded-lg object-cover" alt={h.name} />
                           <div>
-                            <p className="font-bold text-base">{h.name} {'★'.repeat(h.stars)}</p>
+                            <p className="font-bold text-base">{h.name} {'★'.repeat(h.stars)} {h.status === 'archived' && <span className="rounded bg-slate-200 px-2 py-0.5 text-[10px] text-slate-600 dark:bg-slate-800 dark:text-slate-300">Архив</span>}</p>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{formatMoney(h.price)} ₸ • {h.country}, {h.city} • {h.meal}</p>
                           </div>
                         </div>
@@ -516,13 +607,12 @@ export default function AdminWorkspace({ app }) {
                             <Edit3 className="w-5 h-5" />
                           </button>
                           <button type="button" onClick={() => {
-                            const linkedBookings = bookings.filter(booking => booking.hotel?.id === h.id).length;
-                            const historyNote = linkedBookings
-                              ? ` Связанные заявки (${linkedBookings}) сохранятся в истории.`
-                              : '';
-                            if (window.confirm(`Удалить отель «${h.name}»?${historyNote}`)) deleteHotel(h.id);
-                          }} aria-label={`Удалить отель ${h.name}`} className="text-rose-500 p-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 rounded-lg transition" title="Удалить">
-                            <Trash2 className="w-5 h-5" />
+                            const action = h.status === 'archived' ? 'вернуть в каталог' : 'переместить в архив';
+                            if (window.confirm(`${action === 'вернуть в каталог' ? 'Опубликовать' : 'Архивировать'} отель «${h.name}»?`)) {
+                              setHotelArchived(h.id, h.status !== 'archived');
+                            }
+                          }} aria-label={`${h.status === 'archived' ? 'Опубликовать' : 'Архивировать'} отель ${h.name}`} className={`${h.status === 'archived' ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30' : 'text-rose-500 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/30'} p-2 rounded-lg transition`} title={h.status === 'archived' ? 'Опубликовать' : 'Архивировать'}>
+                            {h.status === 'archived' ? <CheckCircle2 className="w-5 h-5" /> : <Trash2 className="w-5 h-5" />}
                           </button>
                         </div>
                       </div>
@@ -597,16 +687,18 @@ export default function AdminWorkspace({ app }) {
                   <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
                     {matchingUsers.map(u => {
                       const userBookings = bookings.filter(b => b.user?.id === u.id);
+                      const activeUserBookings = userBookings.filter(booking => ['pending_demo', 'confirmed_demo'].includes(booking.status));
+                      const activeDemoValue = activeUserBookings.reduce((sum, booking) => sum + (Number(booking.price) || 0), 0);
                       return (
                       <div key={u.id} className={`p-4 border rounded-xl bg-slate-50 dark:bg-slate-950 ${u.isBanned ? 'border-rose-500 dark:border-rose-500/50' : 'border-slate-200 dark:border-slate-800'}`}>
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-bold text-sm flex items-center gap-2">{u.name} {u.isBanned && <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded font-black uppercase">Banned</span>}</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">{u.phone}{u.email ? ` • ${u.email}` : ''} • Статус: {u.status}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">{u.phone}{u.email ? ` • ${u.email}` : ''} • Аккаунт: {u.isBanned ? 'ограничен' : 'активен'}</p>
                           </div>
                           <div className="text-right">
-                            <p className="font-black text-sm text-emerald-600">{formatMoney(u.ltv)} ₸</p>
-                            <p className="text-[10px] text-slate-500">Активных демо-заявок: {userBookings.filter(booking => booking.status !== 'cancelled_demo').length}</p>
+                            <p className="font-black text-sm text-emerald-600">{formatMoney(activeDemoValue)} ₸</p>
+                            <p className="text-[10px] text-slate-500">Сумма активных демо-заявок · {activeUserBookings.length} шт.</p>
                           </div>
                         </div>
                         {userBookings.length > 0 && (
@@ -662,12 +754,14 @@ export default function AdminWorkspace({ app }) {
                 <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h3 className="font-bold text-lg flex items-center gap-2"><MessageSquare className="w-5 h-5 text-rose-500"/> Модерация отзывов</h3>
-                    <p className="mt-1 text-xs text-slate-500">{allReviews.length} отзывов · {allReviews.filter(review => !review.adminReply).length} без ответа</p>
+                    <p className="mt-1 text-xs text-slate-500">{allReviews.length} отзывов · {allReviews.filter(review => review.status === 'pending_review').length} на проверке · {allReviews.filter(review => review.status === 'published' && !review.adminReply).length} без ответа</p>
                   </div>
                   <select aria-label="Фильтр отзывов" value={reviewFilter} onChange={event => setReviewFilter(event.target.value)} className="rounded-lg border border-slate-200 bg-white p-2 text-xs font-bold dark:border-slate-700 dark:bg-slate-950">
                     <option value="ALL">Все отзывы</option>
+                    <option value="PENDING">Ожидают проверки</option>
                     <option value="UNANSWERED">Без ответа</option>
                     <option value="ANSWERED">С ответом</option>
+                    <option value="REJECTED">Отклонённые</option>
                   </select>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto">
@@ -678,6 +772,9 @@ export default function AdminWorkspace({ app }) {
                           <div>
                             <span className="text-[10px] font-bold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded uppercase">{r.hotelName}</span>
                             <p className="font-bold text-sm mt-1">{r.author} <span className="text-slate-400 font-normal">({r.date})</span></p>
+                            <span className={`mt-1 inline-block rounded px-2 py-0.5 text-[10px] font-bold ${r.status === 'pending_review' ? 'bg-amber-100 text-amber-800' : r.status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                              {r.status === 'pending_review' ? 'Ожидает проверки' : r.status === 'rejected' ? 'Отклонён' : 'Опубликован'}
+                            </span>
                           </div>
                           <span className="flex items-center text-xs font-bold text-amber-500"><Star className="w-3 h-3 fill-amber-500 mr-1"/>{r.rating}</span>
                         </div>
@@ -690,7 +787,14 @@ export default function AdminWorkspace({ app }) {
                         )}
                       </div>
 
-                      {!r.adminReply && (
+                      {r.verifiedStay && <p className="text-xs font-bold text-emerald-700">Есть завершённая демо-заявка этого пользователя</p>}
+                      {r.status === 'pending_review' && (
+                        <div className="flex flex-wrap gap-2">
+                          <button type="button" onClick={() => moderateReview(r.hotelId, r.id, 'published')} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white">Опубликовать</button>
+                          <button type="button" onClick={() => moderateReview(r.hotelId, r.id, 'rejected')} className="rounded-lg bg-rose-600 px-3 py-2 text-xs font-bold text-white">Отклонить</button>
+                        </div>
+                      )}
+                      {r.status === 'published' && !r.adminReply && (
                         <div className="flex gap-2">
                           <input type="text" placeholder="Официальный ответ..." value={adminReplyText[r.id] || ''} onChange={e=>setAdminReplyText({...adminReplyText, [r.id]: e.target.value})} className="w-full text-xs p-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 outline-none"/>
                           <button onClick={() => replyToReview(r.hotelId, r.id)} className="bg-indigo-600 text-white px-3 rounded-lg text-xs font-bold whitespace-nowrap">Ответить</button>

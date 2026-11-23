@@ -1,5 +1,5 @@
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ArrowUpRight, MapPin, Plane } from 'lucide-react';
 
 const RealFlightMap = dynamic(() => import('./RealFlightMap'), {
@@ -23,13 +23,13 @@ const ROUTES = [
 
 export default function CountryFlightMap({ hotels, formatMoney, onSelectCountry }) {
   const [selectedCountry, setSelectedCountry] = useState(null);
-  const routes = ROUTES.map(route => {
+  const routes = useMemo(() => ROUTES.map(route => {
     const countryHotels = hotels.filter(hotel => hotel.country === route.country);
     const lowestPrice = countryHotels.length
       ? Math.min(...countryHotels.map(hotel => Number(hotel.price) || Infinity))
       : null;
     return { ...route, hotelCount: countryHotels.length, lowestPrice };
-  });
+  }), [hotels]);
   const selectedRoute = routes.find(route => route.country === selectedCountry);
 
   const selectRoute = country => {

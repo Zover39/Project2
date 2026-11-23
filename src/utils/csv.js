@@ -1,3 +1,5 @@
+import { getBookingStatusLabel } from './booking';
+
 const escapeCsvCell = value => {
   const cell = String(value ?? '');
   const safeCell = /^[\t\r\n ]*[=+\-@]/.test(cell) ? `'${cell}` : cell;
@@ -28,9 +30,10 @@ export const buildFavoritesCsv = (hotels, notes = {}) => {
 
 export const buildBookingsCsv = bookings => {
   const rows = [
-    ['Номер заявки', 'Дата оформления', 'Отель', 'Страна', 'Город', 'Заезд', 'Выезд', 'Гости', 'Ночей', 'Стоимость (₸)', 'Статус', 'Клиент', 'Телефон', 'Email', 'Причина последней отмены', 'Дата и время отмены', 'Комментарий к отмене'],
+    ['Номер заявки', 'Дата оформления', 'Отель', 'Страна', 'Город', 'Заезд', 'Выезд', 'Гости', 'Ночей', 'Стоимость (₸)', 'Статус', 'Клиент', 'Телефон', 'Email', 'Участники поездки', 'Статусы приглашений', 'Причина последней отмены', 'Дата и время отмены', 'Комментарий к отмене'],
     ...bookings.map(booking => {
       const cancellation = booking.cancellationHistory?.[booking.cancellationHistory.length - 1] || booking.cancellation || {};
+      const inviteLabels = { pending: 'ожидает принятия', accepted: 'принято', declined: 'отклонено', revoked: 'доступ отозван' };
       return [
         booking.id,
         booking.date,
@@ -42,10 +45,18 @@ export const buildBookingsCsv = bookings => {
         booking.trip?.pax ?? 2,
         booking.trip?.nights ?? 7,
         booking.price,
-        booking.status === 'cancelled_demo' ? 'Отменено' : 'Демо подтверждено',
+        getBookingStatusLabel(booking.status),
         booking.user?.name,
         booking.user?.phone,
         booking.user?.email,
+        (booking.travelers || []).map(traveler => `${traveler.name} (${traveler.type === 'child' ? 'ребёнок' : 'взрослый'})`).join(', '),
+        (booking.shareInvites || []).map(invite => {
+          const names = (booking.travelers || [])
+            .filter(traveler => invite.travelerIds?.includes(traveler.id))
+            .map(traveler => traveler.name)
+            .join(', ');
+          return `${names || 'Участник'}: ${inviteLabels[invite.status] || invite.status}`;
+        }).join('; '),
         cancellation.reason,
         cancellation.cancelledAt,
         cancellation.note

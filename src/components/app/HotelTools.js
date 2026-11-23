@@ -1,24 +1,32 @@
 import { useMemo, useState } from 'react';
 import HotelListingCard from './HotelListingCard';
 import GuestSelector from './GuestSelector';
+import { getPublishedReviews } from '../../utils/reviews';
+
+const addNightsToDate = (date, nights) => {
+  if (!date) return '';
+  const result = new Date(`${date}T00:00:00`);
+  result.setDate(result.getDate() + nights);
+  return `${result.getFullYear()}-${String(result.getMonth() + 1).padStart(2, '0')}-${String(result.getDate()).padStart(2, '0')}`;
+};
 
 export function TourFinder({ app }) {
   const {
     hotels, COUNTRIES, formatMoney, favorites, toggleFav, openHotel, compareIds,
-    toggleCompare, adults, children, updateGuestCounts
+    toggleCompare, adults, children, updateGuestCounts, checkInDate, setCheckInDate,
+    setCheckOutDate, tourConfig, setTourConfig
   } = app;
   const [country, setCountry] = useState('ALL');
-  const [departure, setDeparture] = useState('');
-  const [nights, setNights] = useState(7);
   const [budget, setBudget] = useState(3000000);
   const [minimumStars, setMinimumStars] = useState(0);
   const guests = adults + children;
+  const nights = tourConfig.nights || 7;
 
   const results = useMemo(() => hotels
     .filter(hotel => country === 'ALL' || hotel.country === country)
     .filter(hotel => !minimumStars || hotel.stars >= minimumStars)
     .filter(hotel => hotel.price * (nights / 7) * guests <= budget)
-    .sort((a, b) => a.price * nights - b.price * nights), [hotels, country, minimumStars, nights, guests, budget]);
+    .sort((a, b) => a.price * (nights / 7) * guests - b.price * (nights / 7) * guests), [hotels, country, minimumStars, nights, guests, budget]);
 
   return (
     <section className="space-y-6">
@@ -33,10 +41,18 @@ export function TourFinder({ app }) {
             </select>
           </label>
           <label className="text-xs font-bold">Дата заезда
-            <input type="date" min={new Date().toLocaleDateString('sv-SE')} value={departure} onChange={event => setDeparture(event.target.value)} className="mt-1 w-full rounded-xl bg-white p-3 text-sm text-slate-900" />
+            <input type="date" min={new Date().toLocaleDateString('sv-SE')} value={checkInDate || ''} onChange={event => {
+              const nextDate = event.target.value;
+              setCheckInDate(nextDate);
+              setCheckOutDate(addNightsToDate(nextDate, nights));
+            }} className="mt-1 w-full rounded-xl bg-white p-3 text-sm text-slate-900" />
           </label>
           <label className="text-xs font-bold">Длительность
-            <select value={nights} onChange={event => setNights(Number(event.target.value))} className="mt-1 w-full rounded-xl bg-white p-3 text-sm text-slate-900">
+            <select value={nights} onChange={event => {
+              const nextNights = Number(event.target.value);
+              setTourConfig(config => ({ ...config, nights: nextNights }));
+              if (checkInDate) setCheckOutDate(addNightsToDate(checkInDate, nextNights));
+            }} className="mt-1 w-full rounded-xl bg-white p-3 text-sm text-slate-900">
               {[3, 5, 7, 10, 14].map(value => <option key={value} value={value}>{value} ночей</option>)}
             </select>
           </label>
@@ -57,7 +73,7 @@ export function TourFinder({ app }) {
       </div>
       <div className="flex items-center justify-between gap-3">
         <h3 className="font-bold text-lg">Подходящих вариантов: {results.length}</h3>
-        {departure && <p className="text-sm text-slate-500">Планируемый заезд: {new Date(`${departure}T00:00:00`).toLocaleDateString('ru-RU')}</p>}
+        {checkInDate && <p className="text-sm text-slate-500">Планируемый заезд: {new Date(`${checkInDate}T00:00:00`).toLocaleDateString('ru-RU')}</p>}
       </div>
       {results.length ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -71,7 +87,7 @@ export function TourFinder({ app }) {
                 adults,
                 children,
                 nights,
-                departureDate: departure
+                departureDate: checkInDate
               })}
               isCompared={compareIds.includes(hotel.id)}
               onToggleCompare={toggleCompare}
@@ -86,14 +102,16 @@ export function TourFinder({ app }) {
 }
 
 export function HotelComparison({ app }) {
-  const { comparedHotels, clearCompare, openHotel, formatMoney, setActiveTab } = app;
+  const { comparedHotels, clearCompare, openHotel, formatMoney, setActiveTab, tourConfig, adults, children } = app;
+  const guestCount = adults + children;
+  const nights = tourConfig.nights || 7;
   const rows = [
     ['Страна и город', hotel => `${hotel.country}, ${hotel.city}`],
     ['Категория', hotel => `${hotel.stars} звёзд`],
-    ['Рейтинг гостей', hotel => hotel.rating != null && hotel.reviews?.length ? `${hotel.rating} / 5` : 'Пока нет оценок'],
+    ['Рейтинг гостей', hotel => hotel.rating != null && getPublishedReviews(hotel.reviews).length ? `${hotel.rating} / 5` : 'Пока нет оценок'],
     ['Питание', hotel => hotel.meal],
     ['Пляж', hotel => hotel.beach],
-    ['Цена за тур', hotel => `${formatMoney(hotel.price)} ₸`]
+    ['Демо-расчёт за поездку', hotel => `${formatMoney(hotel.price * (nights / 7) * guestCount * (tourConfig.class || 1))} ₸`]
   ];
 
   return (
@@ -101,7 +119,8 @@ export function HotelComparison({ app }) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-2xl font-black">Сравнение отелей</h2>
-          <p className="text-sm text-slate-500 mt-1">Выбрано {comparedHotels.length} из 3. Список сохраняется в этом браузере.</p>
+          <p className="text-sm text-slate-500 mt-1">Выбрано {comparedHotels.length} из 3. Список привязан к активному демо-профилю в этом браузере.</p>
+          <p className="text-xs text-slate-500">Сравнение рассчитано на {guestCount} гостей и {nights} ночей. Это ориентировочная демо-сумма, не цена подтверждённого тарифа.</p>
         </div>
         {comparedHotels.length > 0 && <button onClick={clearCompare} className="rounded-xl border px-4 py-2 text-sm font-bold">Очистить сравнение</button>}
       </div>

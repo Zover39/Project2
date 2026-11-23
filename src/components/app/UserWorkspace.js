@@ -21,7 +21,7 @@ export default function UserWorkspace({ app }) {
     checkOutDate, setCheckOutDate, adults, children, updateGuestCounts,
     appliedDestination, setAppliedDestination, handleCatalogSearch,
     COUNTRIES, CITIES, locationAliases, MEAL_TYPES, filteredCatalog, favoriteHotels,
-    favorites, openHotel, clearFavorites,
+    favorites, openHotel, clearFavorites, clearRecentlyViewed,
     favoriteNotes, updateFavoriteNote, recentlyViewedHotels,
     compareIds, toggleCompare
   } = app;
@@ -35,7 +35,7 @@ export default function UserWorkspace({ app }) {
     document.body.appendChild(link);
     link.click();
     link.remove();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const downloadFavorites = () => {
@@ -284,8 +284,13 @@ export default function UserWorkspace({ app }) {
               <section className="space-y-5">
                 <div>
                   <h2 className="text-2xl font-black">Недавно просмотренные</h2>
-                  <p className="text-sm text-slate-500 mt-1">История хранится только в этом браузере.</p>
+                  <p className="text-sm text-slate-500 mt-1">История текущего демо-профиля хранится в этом браузере.</p>
                 </div>
+                {recentlyViewedHotels.length > 0 && (
+                  <button type="button" onClick={clearRecentlyViewed} className="text-sm font-bold text-rose-600 hover:underline">
+                    Очистить историю
+                  </button>
+                )}
                 {recentlyViewedHotels.length ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {recentlyViewedHotels.map(hotel => (
@@ -318,7 +323,9 @@ export default function UserWorkspace({ app }) {
                         <Download className="h-4 w-4" aria-hidden="true" />
                         Скачать список
                       </button>
-                      <button onClick={clearFavorites} className="text-sm font-bold text-rose-500 hover:text-rose-600 transition">
+                      <button onClick={() => {
+                        if (window.confirm('Очистить избранное текущего демо-профиля?')) clearFavorites();
+                      }} className="text-sm font-bold text-rose-500 hover:text-rose-600 transition">
                         Очистить избранное
                       </button>
                     </div>

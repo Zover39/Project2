@@ -1,9 +1,11 @@
 import { ArrowRight, Heart, MapPin, MessageCircle } from 'lucide-react';
+import { getPublishedReviews } from '../../utils/reviews';
 
 export default function HotelListingCard({
   hotel, isFavorite, onToggleFavorite, onSelect,
   isCompared = false, onToggleCompare
 }) {
+  const publishedReviews = getPublishedReviews(hotel.reviews);
   return (
     <div
       role="button"
@@ -21,7 +23,7 @@ export default function HotelListingCard({
       <div className="relative h-56 overflow-hidden">
         <img src={hotel.image} className="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt={hotel.name} />
         <span className="absolute left-4 top-4 rounded-lg bg-black/55 px-2.5 py-1.5 text-[10px] font-bold text-white backdrop-blur">
-          Фото отеля
+          {hotel.status === 'archived' ? 'Снят с публикации' : 'Фото отеля'}
         </span>
         <div className="absolute right-4 top-4 flex items-center gap-2">
           {onToggleCompare && (
@@ -46,8 +48,8 @@ export default function HotelListingCard({
         <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
           <span className="bg-black/60 backdrop-blur text-white text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1">
             <MessageCircle className="w-3 h-3 text-slate-200" />
-            {hotel.rating != null && hotel.reviews?.length
-              ? `${hotel.rating} (${hotel.reviews.length} отз.)`
+            {hotel.rating != null && publishedReviews.length
+              ? `${hotel.rating} (${publishedReviews.length} отз.)`
               : 'Нет оценок гостей'}
           </span>
           <span className="bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg">

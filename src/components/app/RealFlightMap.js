@@ -7,7 +7,7 @@ function FitRoutes({ destinations }) {
   const map = useMap();
 
   useEffect(() => {
-    map.fitBounds([ASTANA, ...destinations.map(route => route.position)], { padding: [28, 28] });
+    map.fitBounds([ASTANA, ...destinations.map(route => route.position)], { padding: [28, 28], animate: false });
   }, [destinations, map]);
 
   return null;

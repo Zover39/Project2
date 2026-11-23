@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
-  AlertTriangle, Download, Edit3, LogIn, LogOut, MessageSquare,
+  AlertTriangle, Download, Edit3, LogIn, LogOut, MessageSquare, Share2,
   PlusCircle, ShoppingBag, Star, UserCheck, UserPlus
 } from 'lucide-react';
+import { getBookingStatusLabel } from '../../utils/booking';
 
 const CANCELLATION_REASONS = [
   { value: 'changed_plans', label: 'Изменились планы' },
@@ -18,11 +19,26 @@ const formatDateTime = value => {
   return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('ru-RU');
 };
 
+const INVITE_STATUS_LABELS = {
+  pending: 'Ожидает принятия',
+  accepted: 'Принято',
+  declined: 'Отклонено',
+  revoked: 'Доступ отозван'
+};
+
+const maskPhone = value => {
+  const digits = String(value || '').replace(/\D/g, '');
+  return digits.length >= 4 ? `•••• ${digits.slice(-4)}` : 'телефон скрыт';
+};
+
 export default function AccountWorkspace({ app }) {
   const {
     currentUser, touristUsers, switchAccount, loginWithPhone,
-    registerAccount, updateCurrentProfile, bookings, hotels,
-    formatMoney, cancelBooking, openHotel, setActiveTab
+    registerAccount, updateCurrentProfile, deleteCurrentAccount, bookings, hotels,
+    favorites, favoriteNotes, compareIds, recentlyViewedHotels,
+    formatMoney, cancelBooking, openHotel, setActiveTab,
+    pendingBookingInvitations, sharedTrips, respondToBookingInvite, manageBookingInvite,
+    backendMode, backendError, requestPhoneCode, verifyPhoneCode, logoutBackend
   } = app;
 
   const [authTab, setAuthTab] = useState('login');
@@ -34,6 +50,9 @@ export default function AccountWorkspace({ app }) {
   const [cancellationBookingId, setCancellationBookingId] = useState(null);
   const [cancellationReason, setCancellationReason] = useState(CANCELLATION_REASONS[0].value);
   const [cancellationNote, setCancellationNote] = useState('');
+  const [authChallenge, setAuthChallenge] = useState(null);
+  const [smsDelivery, setSmsDelivery] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
 
   useEffect(() => {
     if (currentUser) {
@@ -58,25 +77,57 @@ export default function AccountWorkspace({ app }) {
           .map(review => ({ ...review, hotel }))
       )
     : [];
+  const activeDemoValue = currentUserBookings
+    .filter(booking => ['pending_demo', 'confirmed_demo'].includes(booking.status))
+    .reduce((sum, booking) => sum + (Number(booking.price) || 0), 0);
 
-  const handleLoginSubmit = event => {
+  const handleLoginSubmit = async event => {
     event.preventDefault();
-    if (loginWithPhone(loginPhone)) {
+    if (backendMode === 'backend') {
+      const challenge = await requestPhoneCode({ phone: loginPhone, intent: 'login' });
+      if (challenge) {
+        setAuthChallenge({ ...challenge, intent: 'login' });
+        setSmsDelivery(challenge.delivery);
+      }
+    } else if (backendMode === 'demo' && loginWithPhone(loginPhone)) {
       setLoginPhone('');
     }
   };
 
-  const handleRegisterSubmit = event => {
+  const handleRegisterSubmit = async event => {
     event.preventDefault();
-    if (registerAccount(regForm)) {
+    if (backendMode === 'backend') {
+      const challenge = await requestPhoneCode({ phone: regForm.phone, intent: 'register' });
+      if (challenge) {
+        setAuthChallenge({ ...challenge, intent: 'register' });
+        setSmsDelivery(challenge.delivery);
+      }
+    } else if (backendMode === 'demo' && registerAccount(regForm)) {
       setRegForm({ name: '', phone: '', email: '' });
       setShowCreateForm(false);
     }
   };
 
-  const handleProfileSave = event => {
+  const handleVerificationSubmit = async event => {
     event.preventDefault();
-    if (updateCurrentProfile(editForm)) {
+    const success = await verifyPhoneCode({
+      phone: authChallenge.phone,
+      code: verificationCode,
+      intent: authChallenge.intent,
+      ...(authChallenge.intent === 'register' ? { name: regForm.name, email: regForm.email } : {})
+    });
+    if (success) {
+      setAuthChallenge(null);
+      setVerificationCode('');
+      setLoginPhone('');
+      setRegForm({ name: '', phone: '', email: '' });
+      setSmsDelivery('');
+    }
+  };
+
+  const handleProfileSave = async event => {
+    event.preventDefault();
+    if (await updateCurrentProfile(editForm)) {
       setIsEditingProfile(false);
     }
   };
@@ -84,6 +135,49 @@ export default function AccountWorkspace({ app }) {
   const downloadBookings = () => {
     const date = new Date().toISOString().slice(0, 10);
     app.downloadBookings?.(currentUserBookings, `astana-travel-bookings-${date}.csv`);
+  };
+
+  const downloadPersonalData = () => {
+    const data = {
+      exportedAt: new Date().toISOString(),
+      profile: currentUser,
+      bookings: currentUserBookings,
+      sharedTrips: sharedTrips.map(({ booking, invite }) => ({
+        bookingId: booking.id,
+        status: booking.status,
+        hotel: {
+          name: booking.hotel?.name || '',
+          country: booking.hotel?.country || '',
+          city: booking.hotel?.city || ''
+        },
+        trip: {
+          departureDate: booking.trip?.departureDate || '',
+          checkOutDate: booking.trip?.checkOutDate || '',
+          nights: booking.trip?.nights || 0
+        },
+        travelers: (booking.travelers || [])
+          .filter(person => invite.travelerIds?.includes(person.id))
+          .map(({ name, type }) => ({ name, type }))
+      })),
+      reviews: currentUserReviews.map(({ hotel, ...review }) => ({
+        ...review,
+        hotelName: hotel.name,
+        hotelId: hotel.id
+      })),
+      favorites,
+      favoriteNotes,
+      comparedHotelIds: compareIds,
+      recentlyViewedHotelIds: recentlyViewedHotels.map(hotel => hotel.id)
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `astana-travel-profile-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   if (!currentUser) {
@@ -95,7 +189,9 @@ export default function AccountWorkspace({ app }) {
               <p className="text-xs font-black uppercase tracking-[0.18em] text-indigo-500">Личный кабинет</p>
               <h2 className="text-2xl font-black mt-1">Вход или регистрация</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Войдите в свой профиль, чтобы оставлять отзывы и сохранять демо-бронирования.
+                {backendMode === 'backend'
+                  ? 'Вход подтверждается одноразовым SMS-кодом. Заявки и приглашения сохраняются на сервере.'
+                  : 'Войдите в профиль, чтобы сохранять демо-заявки и отзывы.'}
               </p>
             </div>
             <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 self-start">
@@ -116,7 +212,46 @@ export default function AccountWorkspace({ app }) {
             </div>
           </div>
 
-          {authTab === 'login' ? (
+          {backendMode === 'unavailable' ? (
+            <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+              <p className="font-bold">Серверная авторизация пока недоступна.</p>
+              <p className="mt-1 text-xs">{backendError || 'Настройте PostgreSQL и выполните миграции.'}</p>
+            </div>
+          ) : authChallenge ? (
+            <form onSubmit={handleVerificationSubmit} className="mt-6 space-y-4">
+              <p className="rounded-xl bg-indigo-50 p-3 text-sm text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200">
+                {smsDelivery === 'console'
+                  ? `Локальный код выведен в консоль Next.js для ${authChallenge.phone}.`
+                  : `Введите шестизначный код, отправленный на ${authChallenge.phone}.`}
+              </p>
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300">
+                Код подтверждения
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  required
+                  value={verificationCode}
+                  onChange={event => setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-lg tracking-[0.35em] dark:border-slate-700 dark:bg-slate-950"
+                  placeholder="••••••"
+                />
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button type="submit" className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-indigo-700">
+                  Подтвердить телефон
+                </button>
+                <button type="button" onClick={() => {
+                  setAuthChallenge(null);
+                  setVerificationCode('');
+                }} className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold dark:border-slate-700">
+                  Изменить данные
+                </button>
+              </div>
+            </form>
+          ) : authTab === 'login' ? (
             <form onSubmit={handleLoginSubmit} className="mt-6 space-y-4">
               <label className="block text-xs font-bold text-slate-600 dark:text-slate-300">
                 Номер телефона
@@ -134,7 +269,7 @@ export default function AccountWorkspace({ app }) {
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-6 py-3 text-sm font-bold text-white transition"
               >
                 <LogIn className="w-4 h-4" />
-                Войти по номеру
+                {backendMode === 'backend' ? 'Отправить SMS-код' : 'Войти в демо-профиль'}
               </button>
             </form>
           ) : (
@@ -179,13 +314,13 @@ export default function AccountWorkspace({ app }) {
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-6 py-3 text-sm font-bold text-white transition"
               >
                 <UserPlus className="w-4 h-4" />
-                Создать аккаунт и войти
+                {backendMode === 'backend' ? 'Подтвердить телефон и создать аккаунт' : 'Создать демо-аккаунт'}
               </button>
             </form>
           )}
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        {backendMode === 'demo' && <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h3 className="font-bold text-base flex items-center gap-2">
@@ -222,7 +357,7 @@ export default function AccountWorkspace({ app }) {
               </button>
             ))}
           </div>
-        </div>
+        </div>}
       </div>
     );
   }
@@ -247,7 +382,9 @@ export default function AccountWorkspace({ app }) {
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-2xl font-bold">{currentUser.name}</h2>
                 <span className="rounded-full bg-amber-100 dark:bg-amber-950/60 px-2.5 py-0.5 text-xs font-black text-amber-700 dark:text-amber-300">
-                  {currentUser.status}
+                  {backendMode === 'backend'
+                    ? currentUser.role === 'admin' ? 'Администратор' : 'Телефон подтверждён'
+                    : 'Демо-профиль туриста'}
                 </span>
               </div>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
@@ -255,7 +392,7 @@ export default function AccountWorkspace({ app }) {
                 {currentUser.email ? ` • ${currentUser.email}` : ''}
               </p>
               <p className="text-xs text-slate-400 mt-1">
-                Сумма демо-покупок (LTV): <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatMoney(currentUser.ltv || 0)} ₸</span>
+                Активные заявки: <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatMoney(activeDemoValue)} ₸</span>
               </p>
             </div>
           </div>
@@ -271,12 +408,29 @@ export default function AccountWorkspace({ app }) {
             </button>
             <button
               type="button"
-              onClick={() => switchAccount('')}
+              onClick={() => backendMode === 'backend' ? logoutBackend() : switchAccount('')}
               className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 transition"
             >
               <LogOut className="w-3.5 h-3.5" />
               Выйти
             </button>
+            <button type="button" onClick={downloadPersonalData} className="rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-bold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
+              Скачать мои данные
+            </button>
+            {(backendMode === 'demo' || currentUser.role === 'user') && (
+              <button
+                type="button"
+                onClick={() => {
+                  const message = backendMode === 'backend'
+                    ? 'Удалить аккаунт, заявки и доступы к поездкам? Это действие нельзя отменить.'
+                    : 'Удалить демо-профиль, его локальные заявки, отзывы и списки в этом браузере? Это действие нельзя отменить.';
+                  if (window.confirm(message)) deleteCurrentAccount();
+                }}
+                className="rounded-xl border border-rose-200 px-3.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-950/40"
+              >
+                Удалить профиль
+              </button>
+            )}
           </div>
         </div>
 
@@ -300,8 +454,10 @@ export default function AccountWorkspace({ app }) {
                 required
                 value={editForm.phone}
                 onChange={event => setEditForm({ ...editForm, phone: event.target.value })}
+                disabled={backendMode === 'backend'}
                 className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-2.5 text-sm text-slate-900 dark:text-white"
               />
+              {backendMode === 'backend' && <span className="mt-1 block font-normal">Подтверждённый телефон нельзя изменить без повторной проверки номера.</span>}
             </label>
             <label className="text-xs font-bold text-slate-500">
               Email
@@ -332,6 +488,7 @@ export default function AccountWorkspace({ app }) {
         )}
       </div>
 
+      {backendMode === 'demo' && <>
       {/* ПЕРЕКЛЮЧЕНИЕ И СОЗДАНИЕ АККАУНТОВ */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -425,10 +582,66 @@ export default function AccountWorkspace({ app }) {
           </form>
         )}
       </div>
+      </>}
+
+      <section className="space-y-4 rounded-3xl border border-indigo-100 bg-indigo-50/60 p-5 dark:border-indigo-900/60 dark:bg-indigo-950/20">
+        <div className="flex items-start gap-3">
+          <Share2 className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-400" />
+          <div>
+            <h3 className="text-lg font-bold">Приглашения и поездки со мной</h3>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+              {backendMode === 'backend'
+                ? 'Приглашения синхронизируются между устройствами. Для принятия нужен подтверждённый номер; поездку можно только просматривать.'
+                : 'Демо-приглашения видны только в этом браузере. Принятое приглашение даёт просмотр поездки, а покупатель может отозвать доступ.'}
+            </p>
+          </div>
+        </div>
+
+        {pendingBookingInvitations.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="text-sm font-bold">Нужно ответить ({pendingBookingInvitations.length})</h4>
+            {pendingBookingInvitations.map(({ booking, invite }) => (
+              <article key={invite.id} className="rounded-2xl border border-indigo-100 bg-white p-4 dark:border-indigo-900 dark:bg-slate-900">
+                <p className="font-bold">{booking.hotel?.name || 'Поездка'} · приглашение от {booking.user?.name || 'пользователя'}</p>
+                <p className="mt-1 text-xs text-slate-500">{booking.hotel?.country || ''}{booking.hotel?.city ? `, ${booking.hotel.city}` : ''} · {booking.trip?.nights || '—'} ночей · заявка {booking.id}</p>
+                <p className="mt-2 text-xs text-slate-500">Участники: {(booking.travelers || []).filter(person => invite.travelerIds?.includes(person.id)).map(person => person.name).join(', ') || 'состав не указан'}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => respondToBookingInvite(booking.id, invite.id, 'accepted')} className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-indigo-700">Принять</button>
+                  <button type="button" onClick={() => respondToBookingInvite(booking.id, invite.id, 'declined')} className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Отклонить</button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+
+        {sharedTrips.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="text-sm font-bold">Со мной поделились ({sharedTrips.length})</h4>
+            {sharedTrips.map(({ booking, invite }) => (
+              <article key={invite.id} className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h5 className="font-bold">{booking.hotel?.name || 'Поездка'}</h5>
+                    <p className="mt-1 text-xs text-slate-500">{booking.hotel?.country || ''}{booking.hotel?.city ? `, ${booking.hotel.city}` : ''} · {booking.trip?.nights || '—'} ночей · заявка {booking.id}</p>
+                    <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">Вы в поездке: {(booking.travelers || []).filter(person => invite.travelerIds?.includes(person.id)).map(person => person.name).join(', ') || currentUser.name}</p>
+                  </div>
+                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">{getBookingStatusLabel(booking.status)}</span>
+                </div>
+                <p className="mt-3 border-t border-slate-100 pt-3 text-[11px] text-slate-500 dark:border-slate-800">Только просмотр: сумма, контакты покупателя и управление заявкой недоступны. Это демо-запись, не билет.</p>
+              </article>
+            ))}
+          </div>
+        )}
+
+        {pendingBookingInvitations.length === 0 && sharedTrips.length === 0 && (
+          <p className="rounded-xl bg-white/80 p-3 text-xs text-slate-500 dark:bg-slate-900/80">Пока приглашений нет. Чтобы поделиться поездкой, покупатель укажет ваш телефон в списке участников при оформлении.</p>
+        )}
+        {backendMode === 'demo' && <p className="text-[10px] text-slate-500">Демо-приглашения видны только в этом браузере; телефон не подтверждается SMS и данные не синхронизируются между устройствами.</p>}
+      </section>
 
       {/* МОИ ДЕМО-БРОНИРОВАНИЯ */}
       <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-        <h3 className="text-xl font-bold">Мои демо-бронирования ({currentUserBookings.length})</h3>
+        <h3 className="text-xl font-bold">{backendMode === 'backend' ? 'Мои заявки' : 'Мои демо-бронирования'} ({currentUserBookings.length})</h3>
         {currentUserBookings.length > 0 && (
           <button
             type="button"
@@ -443,7 +656,7 @@ export default function AccountWorkspace({ app }) {
       {currentUserBookings.length === 0 ? (
         <div className="text-center py-10 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
           <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500 font-medium">У этого аккаунта пока нет демо-заявок</p>
+          <p className="text-slate-500 font-medium">{backendMode === 'backend' ? 'Заявок пока нет' : 'У этого аккаунта пока нет демо-заявок'}</p>
           <button
             type="button"
             onClick={() => setActiveTab('catalog')}
@@ -457,6 +670,7 @@ export default function AccountWorkspace({ app }) {
           {currentUserBookings.map(b => {
             const lastCancellation = b.cancellationHistory?.[b.cancellationHistory.length - 1] || b.cancellation;
             const selectedReason = CANCELLATION_REASONS.find(reason => reason.value === cancellationReason);
+            const canCancel = ['pending_demo', 'confirmed_demo'].includes(b.status);
             return (
               <article key={b.id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -466,15 +680,19 @@ export default function AccountWorkspace({ app }) {
                       <h4 className="font-bold text-lg leading-tight">{b.hotel?.name || 'Отель удалён из каталога'}</h4>
                       <p className="text-xs text-slate-500 mt-1">Заявка {b.id} · Создана {b.date || '—'}</p>
                       <p className="text-xs text-slate-500 mt-1">{b.hotel?.country || 'Страна не указана'}, {b.hotel?.city || 'город не указан'} · {b.trip?.pax || 2} гостей · {b.trip?.nights || 7} ночей</p>
-                      <p className="mt-1 text-xs font-bold text-amber-700 dark:text-amber-400">Демо-бронирование — оплата не производилась</p>
+                      <p className="mt-1 text-xs font-bold text-amber-700 dark:text-amber-400">
+                        {b.paymentMode === 'demo' || backendMode === 'demo'
+                          ? 'Демо-заявка — бронирование отеля и оплата не выполнялись'
+                          : 'Заявка на сайте — бронирование отеля и оплата не выполнялись'}
+                      </p>
                     </div>
                   </div>
                   <div className="w-full text-right sm:w-auto">
                     <p className="font-black text-xl text-indigo-600 dark:text-indigo-400">{formatMoney(b.price)} ₸</p>
-                    <span className={`text-[10px] px-2 py-1 rounded-md font-bold mt-1 inline-block ${b.status === 'cancelled_demo' ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400'}`}>
-                      {b.status === 'cancelled_demo' ? 'Отменено' : 'Демо подтверждено'}
+                    <span className={`text-[10px] px-2 py-1 rounded-md font-bold mt-1 inline-block ${b.status === 'cancelled_demo' || b.status === 'rejected_demo' ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'}`}>
+                      {getBookingStatusLabel(b.status)}
                     </span>
-                    {b.status !== 'cancelled_demo' && cancellationBookingId !== b.id && (
+                    {canCancel && cancellationBookingId !== b.id && (
                       <button type="button" onClick={() => {
                         setCancellationBookingId(b.id);
                         setCancellationReason(CANCELLATION_REASONS[0].value);
@@ -485,6 +703,33 @@ export default function AccountWorkspace({ app }) {
                     )}
                   </div>
                 </div>
+
+                {(b.travelers?.length > 0 || b.shareInvites?.length > 0) && (
+                  <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+                    <h5 className="text-sm font-bold">Участники и приглашения</h5>
+                    {b.travelers?.length > 0 && (
+                      <ul className="mt-2 grid gap-1 text-xs text-slate-600 dark:text-slate-300 sm:grid-cols-2">
+                        {b.travelers.map(person => {
+                          const invite = (b.shareInvites || []).find(item => item.travelerIds?.includes(person.id));
+                          return <li key={person.id}>{person.name} · {person.type === 'child' ? 'ребёнок' : 'взрослый'} · {invite ? INVITE_STATUS_LABELS[invite.status] || invite.status : 'без приглашения'}</li>;
+                        })}
+                      </ul>
+                    )}
+                    {(b.shareInvites || []).map(invite => (
+                      <div key={invite.id} className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-3 text-xs dark:border-slate-800">
+                        <p>{maskPhone(invite.phone)} · {INVITE_STATUS_LABELS[invite.status] || invite.status}</p>
+                        <div className="flex gap-2">
+                          {['declined', 'revoked'].includes(invite.status) && canCancel && (
+                            <button type="button" onClick={() => manageBookingInvite(b.id, invite.id, 'pending')} className="font-bold text-indigo-600 hover:underline dark:text-indigo-400">Пригласить снова</button>
+                          )}
+                          {['pending', 'accepted'].includes(invite.status) && (
+                            <button type="button" onClick={() => manageBookingInvite(b.id, invite.id, 'revoked')} className="font-bold text-rose-600 hover:underline">Отозвать доступ</button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {b.status === 'cancelled_demo' && (
                   <div className="mt-4 rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm dark:border-rose-900/50 dark:bg-rose-950/20">
@@ -497,7 +742,22 @@ export default function AccountWorkspace({ app }) {
                   </div>
                 )}
 
-                {cancellationBookingId === b.id && b.status !== 'cancelled_demo' && (
+                {b.statusHistory?.length > 0 && (
+                  <details className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-800">
+                    <summary className="cursor-pointer text-xs font-bold text-indigo-600 dark:text-indigo-400">История заявки</summary>
+                    <ol className="mt-3 space-y-2">
+                      {b.statusHistory.map((entry, index) => (
+                        <li key={`${b.id}-status-${index}`} className="rounded-lg bg-slate-50 p-3 text-xs dark:bg-slate-950">
+                          <p className="font-bold">{getBookingStatusLabel(entry.status)}</p>
+                          <p className="mt-1 text-slate-500">{formatDateTime(entry.changedAt)} · {entry.changedBy || 'Система'}</p>
+                          {entry.note && <p className="mt-1 text-slate-600 dark:text-slate-400">{entry.note}</p>}
+                        </li>
+                      ))}
+                    </ol>
+                  </details>
+                )}
+
+                {cancellationBookingId === b.id && canCancel && (
                   <form onSubmit={event => {
                     event.preventDefault();
                     cancelBooking(b.id, {
@@ -555,6 +815,15 @@ export default function AccountWorkspace({ app }) {
                   </span>
                 </div>
                 <p className="text-xs text-slate-400">{review.date}</p>
+                {review.status === 'pending_review' && (
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">Ожидает проверки модератором</p>
+                )}
+                {review.status === 'rejected' && (
+                  <p className="text-xs font-semibold text-rose-700 dark:text-rose-300">Не опубликован</p>
+                )}
+                {review.verifiedStay && (
+                  <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">Подтверждённая демо-поездка</p>
+                )}
                 <p className="text-sm text-slate-700 dark:text-slate-300">{review.text}</p>
                 {review.adminReply && (
                   <p className="text-xs bg-slate-50 dark:bg-slate-800 rounded-xl p-2.5 text-slate-600 dark:text-slate-300 border-l-2 border-indigo-500">
