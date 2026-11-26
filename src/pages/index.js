@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { MEAL_TYPES, generateHotels, INITIAL_USERS } from '../data/appData';
 import { formatMoney } from '../utils/format';
+import { calculateSmartTourPrice } from '../utils/pricing';
 import { getPublishedReviews, getReviewAverage } from '../utils/reviews';
 import {
   buildDefaultDestinationDirectory, canonicalizeHotelDestination, ensureDestinationDirectory,
@@ -1271,8 +1272,22 @@ export default function AstanaTravelApp() {
       changeCheckoutStep(0);
       return;
     }
-    const packagePrice = (tourConfig.datePrice || activeHotel.price) * (tourConfig.nights / 7);
-    const finalPrice = packagePrice * tourConfig.class * tourConfig.pax;
+    if (tourConfig.forOther) {
+      if (!String(tourConfig.recipientName || '').trim() || !String(tourConfig.recipientPhone || '').trim()) {
+        pushToast('Укажите ФИО и телефон получателя билета');
+        return;
+      }
+    }
+    const smartPricing = calculateSmartTourPrice({
+      basePrice: tourConfig.datePrice || activeHotel.price,
+      nights: tourConfig.nights,
+      adults: tourConfig.adults ?? tourConfig.pax,
+      children: tourConfig.children ?? 0,
+      flightClass: tourConfig.class,
+      departureDate: tourConfig.departureDate || '',
+      promoCode: tourConfig.promoCode || ''
+    });
+    const finalPrice = smartPricing.total;
     let bookingId;
     do {
       bookingId = `PNR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
@@ -1297,6 +1312,14 @@ export default function AstanaTravelApp() {
     }));
     const newBooking = {
       id: bookingId,
+      recipient: tourConfig.forOther
+        ? {
+            forOther: true,
+            fullName: String(tourConfig.recipientName || '').trim(),
+            phone: String(tourConfig.recipientPhone || '').trim()
+          }
+        : null,
+      pricingBreakdown: smartPricing,
       hotel: {
         id: latestHotel.id,
         name: latestHotel.name,

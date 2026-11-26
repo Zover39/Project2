@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Bot, CalendarDays, Download, Filter, Heart, MapPin, Search, Sparkles, X, Zap
 } from 'lucide-react';
@@ -25,6 +26,41 @@ export default function UserWorkspace({ app }) {
     favoriteNotes, updateFavoriteNote, recentlyViewedHotels,
     compareIds, toggleCompare
   } = app;
+
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiBudget, setAiBudget] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResults, setAiResults] = useState([]);
+
+  const runAiRecommend = async () => {
+    if (!aiQuery.trim() && !aiBudget) {
+      pushToast('Опишите пожелания к отдыху или укажите бюджет');
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const res = await fetch('/api/ai-recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: aiQuery,
+          maxBudget: Number(aiBudget) || 0,
+          hotels
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAiResults(data.recommendations || []);
+        pushToast(`Подобрано вариантов: ${(data.recommendations || []).length}`);
+      } else {
+        pushToast('Ошибка при подборе туров');
+      }
+    } catch {
+      pushToast('Не удалось связаться с сервером подбора');
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const downloadCsv = (content, fileName) => {
     const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
@@ -400,15 +436,69 @@ export default function UserWorkspace({ app }) {
 
             {/* 3. AI ASSISTANT */}
             {activeTab === 'ai' && (
-              <div className="max-w-2xl mx-auto bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 shadow-lg animate-in zoom-in-95">
-                <div className="flex items-center gap-4 mb-8">
+              <div className="max-w-2xl mx-auto bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 shadow-lg animate-in zoom-in-95 space-y-5">
+                <div className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center"><Bot className="w-8 h-8 text-purple-600 dark:text-purple-400"/></div>
-                  <div><h2 className="text-2xl font-black">Smart AI Ассистент</h2><p className="text-sm text-slate-500 dark:text-slate-400">Напишите запрос в свободной форме</p></div>
+                  <div><h2 className="text-2xl font-black">Smart AI Ассистент</h2><p className="text-sm text-slate-500 dark:text-slate-400">Опишите пожелания: страна, море, бассейн, всё включено, люкс</p></div>
                 </div>
-                <textarea rows="4" placeholder="Например: Хочу на море в Дубай, нас двое взрослых, бюджет до 1.5 млн тенге..." className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 text-sm focus:outline-none focus:border-purple-500 mb-4 placeholder:text-slate-400" />
-                <button onClick={() => pushToast('AI: Анализирую базу данных... (Симуляция)')} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 transition">
-                  <Sparkles className="w-5 h-5"/> Искать идеальный тур
+                <textarea
+                  rows="3"
+                  value={aiQuery}
+                  onChange={(e) => setAiQuery(e.target.value)}
+                  placeholder="Например: Хочу на море с бассейном и всё включено, уровень 5 звёзд..."
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 text-sm focus:outline-none focus:border-purple-500 placeholder:text-slate-400"
+                />
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5">Максимальный бюджет (₸, необязательно)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="50000"
+                    value={aiBudget}
+                    onChange={(e) => setAiBudget(e.target.value)}
+                    placeholder="Например: 1500000"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+                <button
+                  type="button"
+                  disabled={aiLoading}
+                  onClick={runAiRecommend}
+                  className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 transition"
+                >
+                  <Sparkles className="w-5 h-5"/> {aiLoading ? 'Подбираем...' : 'Искать идеальный тур'}
                 </button>
+                {aiResults.length > 0 && (
+                  <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                    <h3 className="text-sm font-black text-slate-700 dark:text-slate-200">Рекомендованные отели</h3>
+                    {aiResults.map((rec) => {
+                      const fullHotel = hotels.find((h) => h.id === rec.hotelId);
+                      return (
+                        <div key={rec.hotelId} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-sm">{rec.name}</span>
+                              <span className="rounded-full bg-purple-100 dark:bg-purple-900/40 px-2 py-0.5 text-[11px] font-black text-purple-700 dark:text-purple-300">
+                                {rec.score}% совпадение
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500">{rec.country}, {rec.city} · {formatMoney(rec.price)} ₸</p>
+                            <p className="text-xs text-emerald-600 dark:text-emerald-400">{rec.reasons.join(' • ')}</p>
+                          </div>
+                          {fullHotel && (
+                            <button
+                              type="button"
+                              onClick={() => openHotel(fullHotel)}
+                              className="shrink-0 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-xs font-bold text-white transition"
+                            >
+                              Открыть отель
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 

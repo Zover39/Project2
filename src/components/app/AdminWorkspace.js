@@ -380,6 +380,7 @@ export default function AdminWorkspace({ app }) {
                           <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                             {[
                               ['Клиент', booking.user?.name || 'Не указан'],
+                              ...(booking.recipient?.forOther ? [['Получатель билета', `${booking.recipient.fullName} (${booking.recipient.phone})`]] : []),
                               ['Телефон', booking.user?.phone || 'Не указан'],
                               ['Email', booking.user?.email || 'Не указан'],
                               ['Отель', booking.hotel?.name || 'Отель не указан'],

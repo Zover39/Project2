@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Calendar, CheckCircle2, Share2, ShieldCheck, Star, ThumbsUp, X } from 'lucide-react';
 import GuestSelector from './GuestSelector';
 import { getPublishedReviews } from '../../utils/reviews';
+import { calculateSmartTourPrice } from '../../utils/pricing';
 
 const getGuestLabel = count => {
   if (count === 1) return 'гость';
@@ -41,7 +42,16 @@ export default function HotelBookingModal({ app }) {
   const basePrice = activeHotel ? (activeHotel.price || 0) * (tourConfig.nights / 7) : 0;
   const hotelCost = basePrice * tourConfig.pax;
   const classSurcharge = hotelCost * (tourConfig.class - 1);
-  const totalPrice = hotelCost + classSurcharge;
+  const smartPricing = calculateSmartTourPrice({
+    basePrice: tourConfig.datePrice || activeHotel?.price || 0,
+    nights: tourConfig.nights,
+    adults: tourConfig.adults ?? adults ?? tourConfig.pax,
+    children: tourConfig.children ?? children ?? 0,
+    flightClass: tourConfig.class,
+    departureDate: tourConfig.departureDate || '',
+    promoCode: tourConfig.promoCode || ''
+  });
+  const totalPrice = smartPricing.total;
   const createdBooking = bookings.find(booking => booking.id === createdBookingId);
   const nightOptions = [...new Set([3, 5, 7, 10, 14, tourConfig.nights])].sort((a, b) => a - b);
   const today = new Date();
@@ -349,9 +359,31 @@ export default function HotelBookingModal({ app }) {
 
                     <div className="mt-8 border-t border-slate-200 dark:border-slate-700 pt-6">
                       <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Демо-расчёт · {tourConfig.pax} {getGuestLabel(tourConfig.pax)} · {tourConfig.nights} ночей</h4>
+                      <div className="mb-4">
+                        <label htmlFor="promo-code-input" className="block text-xs font-bold text-slate-500 mb-1.5">Промокод (ASTANA10, SUMMER2026, VIP15)</label>
+                        <input
+                          id="promo-code-input"
+                          type="text"
+                          placeholder="Введите промокод"
+                          value={tourConfig.promoCode || ''}
+                          onChange={(e) => setTourConfig((prev) => ({ ...prev, promoCode: e.target.value.toUpperCase() }))}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold uppercase dark:border-slate-700 dark:bg-slate-900"
+                        />
+                        {smartPricing.promoApplied && (
+                          <p className="mt-1 text-xs font-semibold text-emerald-600">{smartPricing.promoApplied.label}</p>
+                        )}
+                        {smartPricing.promoError && (
+                          <p className="mt-1 text-xs font-semibold text-rose-500">{smartPricing.promoError}</p>
+                        )}
+                      </div>
                       <dl className="space-y-2 text-sm">
-                        <div className="flex justify-between gap-3"><dt>Демо-база: {tourConfig.nights} ночей</dt><dd>{formatMoney(hotelCost)} ₸</dd></div>
-                        {classSurcharge > 0 && <div className="flex justify-between gap-3"><dt>Демо-параметр бизнес-класса</dt><dd>{formatMoney(classSurcharge)} ₸</dd></div>}
+                        <div className="flex justify-between gap-3"><dt>База (с учётом детей -35%)</dt><dd>{formatMoney(smartPricing.subtotal)} ₸</dd></div>
+                        {smartPricing.earlyBirdDiscount > 0 && (
+                          <div className="flex justify-between gap-3 text-emerald-600"><dt>Раннее бронирование (-7%)</dt><dd>-{formatMoney(smartPricing.earlyBirdDiscount)} ₸</dd></div>
+                        )}
+                        {smartPricing.promoDiscount > 0 && (
+                          <div className="flex justify-between gap-3 text-emerald-600"><dt>Скидка по промокоду</dt><dd>-{formatMoney(smartPricing.promoDiscount)} ₸</dd></div>
+                        )}
                       </dl>
                       <p className="text-3xl font-black text-slate-900 dark:text-white mt-3 mb-4">{formatMoney(totalPrice)} ₸</p>
                       <p className="text-[11px] text-slate-500 mb-3">Расчётная демо-цена, не предложение от отеля или туроператора. Актуальную стоимость и состав тура нужно уточнить отдельно.</p>
@@ -597,6 +629,41 @@ export default function HotelBookingModal({ app }) {
                       <p className="text-xs text-slate-500">
                         Оформление на аккаунт: <span className="font-bold text-slate-800 dark:text-slate-200">{currentUser.name}</span> ({currentUser.phone})
                       </p>
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left dark:border-slate-800 dark:bg-slate-800/40 space-y-3">
+                        <label className="flex items-center gap-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(tourConfig.forOther)}
+                            onChange={(e) => setTourConfig((prev) => ({ ...prev, forOther: e.target.checked }))}
+                            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          Покупаю билет другому человеку
+                        </label>
+                        {tourConfig.forOther && (
+                          <div className="space-y-2.5 pt-1">
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-500 mb-1">ФИО получателя *</label>
+                              <input
+                                type="text"
+                                placeholder="Например: Айгерим Серикова"
+                                value={tourConfig.recipientName || ''}
+                                onChange={(e) => setTourConfig((prev) => ({ ...prev, recipientName: e.target.value }))}
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-500 mb-1">Телефон получателя *</label>
+                              <input
+                                type="tel"
+                                placeholder="+7 777 123 45 67"
+                                value={tourConfig.recipientPhone || ''}
+                                onChange={(e) => setTourConfig((prev) => ({ ...prev, recipientPhone: e.target.value }))}
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
                       <button onClick={confirmBooking} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-lg transition">Создать демо-заявку</button>
                     </>
                   ) : (
@@ -633,6 +700,12 @@ export default function HotelBookingModal({ app }) {
                     <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2"><span className="text-slate-400">Номер заявки</span> <span>{createdBookingId || '—'}</span></p>
                     <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2"><span className="text-slate-400">Статус</span> <span>Новая · демо</span></p>
                     <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2"><span className="text-slate-400">Отель</span> <span>{activeHotel.name}</span></p>
+                    {tourConfig.forOther && tourConfig.recipientName && (
+                      <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                        <span className="text-slate-400">Получатель</span>
+                        <span>{tourConfig.recipientName}{tourConfig.recipientPhone ? ` (${tourConfig.recipientPhone})` : ''}</span>
+                      </p>
+                    )}
                     {tourConfig.roomType && <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2"><span className="text-slate-400">Вариант размещения</span> <span>{tourConfig.roomType}</span></p>}
                     <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2"><span className="text-slate-400">Взрослых</span> <span>{tourConfig.adults ?? adults}</span></p>
                     <p className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2"><span className="text-slate-400">Детей</span> <span>{tourConfig.children ?? children}</span></p>

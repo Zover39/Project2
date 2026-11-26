@@ -1,0 +1,898 @@
+{
+  "bookings": [
+    {
+      "id": "PNR-364609",
+      "hotel": {
+        "country": "ОАЭ",
+        "city": "Дубай",
+        "name": "Atlantis, The Palm",
+        "officialUrl": "https://www.atlantis.com/dubai/atlantis-the-palm",
+        "desc": "Курорт Atlantis, The Palm расположен на Palm Jumeirah. В комплексе находятся аквапарк Aquaventure World, аквариум The Lost Chambers и частный пляж.",
+        "locationDescription": "Palm Jumeirah, Дубай. Курортный комплекс с частным пляжем и бассейнами.",
+        "amenities": [
+          "Аквапарк Aquaventure World",
+          "Аквариум The Lost Chambers",
+          "Частный пляж",
+          "Бассейны"
+        ],
+        "roomTypes": [
+          "Номера и люксы; конкретная категория зависит от тарифа"
+        ],
+        "dining": "На территории работают рестораны и кафе. Включённое питание зависит от выбранного тарифа.",
+        "stars": 5,
+        "price": 1200000,
+        "meal": "Питание по выбранному тарифу",
+        "mealPlans": [
+          "Без питания",
+          "Завтрак",
+          "Полупансион"
+        ],
+        "beach": "Частный пляж",
+        "photos": [
+          {
+            "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/86/Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_2.jpg/1280px-Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_2.jpg",
+            "alt": "Atlantis, The Palm, вид с побережья",
+            "credit": "CT Cooper",
+            "license": "Public domain",
+            "licenseUrl": "https://commons.wikimedia.org/wiki/Commons:Licensing",
+            "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_2.jpg"
+          },
+          {
+            "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/74/Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_3.jpg/1280px-Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_3.jpg",
+            "alt": "Atlantis, The Palm, панорамный вид",
+            "credit": "CT Cooper",
+            "license": "Public domain",
+            "licenseUrl": "https://commons.wikimedia.org/wiki/Commons:Licensing",
+            "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_3.jpg"
+          }
+        ],
+        "id": "h-1",
+        "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/86/Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_2.jpg/1280px-Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_2.jpg",
+        "description": "Курорт Atlantis, The Palm расположен на Palm Jumeirah. В комплексе находятся аквапарк Aquaventure World, аквариум The Lost Chambers и частный пляж.",
+        "rating": null,
+        "reviews": [],
+        "viewers": null,
+        "roomsLeft": null
+      },
+      "price": 2400000,
+      "pricingBreakdown": {
+        "subtotal": 2400000,
+        "earlyBirdDiscount": 0,
+        "promoDiscount": 0,
+        "promoApplied": null,
+        "promoError": "",
+        "total": 2400000
+      },
+      "date": "26.11.2026",
+      "createdAt": "2026-11-26T10:10:43.916Z",
+      "user": {
+        "id": "u-1",
+        "name": "Арман Смагулов",
+        "phone": "+7 777 123 45 67",
+        "ltv": 1500000,
+        "status": "Platinum",
+        "isBanned": false
+      },
+      "status": "confirmed_demo",
+      "paymentMode": "demo",
+      "trip": {
+        "class": 1,
+        "pax": 2,
+        "adults": 2,
+        "children": 0,
+        "nights": 7,
+        "datePrice": 1200000,
+        "departureDate": "",
+        "checkOutDate": "",
+        "mealPlan": "Без питания",
+        "roomType": "Номера и люксы; конкретная категория зависит от тарифа",
+        "forOther": false
+      }
+    }
+  ],
+  "hotels": [
+    {
+      "country": "ОАЭ",
+      "city": "Дубай",
+      "name": "Atlantis, The Palm",
+      "officialUrl": "https://www.atlantis.com/dubai/atlantis-the-palm",
+      "desc": "Курорт Atlantis, The Palm расположен на Palm Jumeirah. В комплексе находятся аквапарк Aquaventure World, аквариум The Lost Chambers и частный пляж.",
+      "locationDescription": "Palm Jumeirah, Дубай. Курортный комплекс с частным пляжем и бассейнами.",
+      "amenities": [
+        "Аквапарк Aquaventure World",
+        "Аквариум The Lost Chambers",
+        "Частный пляж",
+        "Бассейны"
+      ],
+      "roomTypes": [
+        "Номера и люксы; конкретная категория зависит от тарифа"
+      ],
+      "dining": "На территории работают рестораны и кафе. Включённое питание зависит от выбранного тарифа.",
+      "stars": 5,
+      "price": 1200000,
+      "meal": "Питание по выбранному тарифу",
+      "mealPlans": [
+        "Без питания",
+        "Завтрак",
+        "Полупансион"
+      ],
+      "beach": "Частный пляж",
+      "photos": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/86/Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_2.jpg/1280px-Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_2.jpg",
+          "alt": "Atlantis, The Palm, вид с побережья",
+          "credit": "CT Cooper",
+          "license": "Public domain",
+          "licenseUrl": "https://commons.wikimedia.org/wiki/Commons:Licensing",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_2.jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/74/Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_3.jpg/1280px-Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_3.jpg",
+          "alt": "Atlantis, The Palm, панорамный вид",
+          "credit": "CT Cooper",
+          "license": "Public domain",
+          "licenseUrl": "https://commons.wikimedia.org/wiki/Commons:Licensing",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_3.jpg"
+        }
+      ],
+      "id": "h-1",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/86/Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_2.jpg/1280px-Atlantis%2C_The_Palm_from_Le_Royal_M%C3%A9ridien_Beach_Resort_and_Spa_in_Dubai_2.jpg",
+      "description": "Курорт Atlantis, The Palm расположен на Palm Jumeirah. В комплексе находятся аквапарк Aquaventure World, аквариум The Lost Chambers и частный пляж.",
+      "rating": null,
+      "reviews": [],
+      "viewers": null,
+      "roomsLeft": null
+    },
+    {
+      "country": "ОАЭ",
+      "city": "Абу-Даби",
+      "name": "Emirates Palace Mandarin Oriental",
+      "officialUrl": "https://www.mandarinoriental.com/en/abu-dhabi/emirates-palace",
+      "desc": "Курорт Emirates Palace Mandarin Oriental расположен на западном побережье Корниш в Абу-Даби. Отель известен частным пляжем и ресторанами международной кухни.",
+      "locationDescription": "Район Рас-эль-Ахдар, Абу-Даби; отель выходит на частный пляж длиной около 1,3 км.",
+      "amenities": [
+        "Частный пляж",
+        "Спа и бассейны",
+        "Рестораны на территории"
+      ],
+      "roomTypes": [
+        "Номера и люксы; наличие и условия зависят от даты"
+      ],
+      "dining": "На территории есть, среди прочего, Hakkasan, Talea, Lebanese Terrace и Martabaan. Питание в стоимость входит только при соответствующем тарифе.",
+      "stars": 5,
+      "price": 1500000,
+      "meal": "Питание по выбранному тарифу",
+      "mealPlans": [
+        "Без питания",
+        "Завтрак",
+        "Полупансион"
+      ],
+      "beach": "Частный песчаный пляж",
+      "photos": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/Emirates_Palace_-_55482143859.jpg/1280px-Emirates_Palace_-_55482143859.jpg",
+          "alt": "Emirates Palace, внешний вид",
+          "credit": "xiquinhosilva",
+          "license": "CC BY 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Emirates_Palace_-_55482143859.jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/63/Emirates_palace-abu_dhabi-2011_%285%29.JPG/1280px-Emirates_palace-abu_dhabi-2011_%285%29.JPG",
+          "alt": "Emirates Palace, фасад",
+          "credit": "Alberto-g-rovi",
+          "license": "CC BY-SA 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Emirates_palace-abu_dhabi-2011_(5).JPG"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/19/Emirates_palace-abu_dhabi-2011_%286%29.JPG/1280px-Emirates_palace-abu_dhabi-2011_%286%29.JPG",
+          "alt": "Emirates Palace, территория",
+          "credit": "Alberto-g-rovi",
+          "license": "CC BY-SA 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Emirates_palace-abu_dhabi-2011_(6).JPG"
+        }
+      ],
+      "id": "h-2",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/Emirates_Palace_-_55482143859.jpg/1280px-Emirates_Palace_-_55482143859.jpg",
+      "description": "Курорт Emirates Palace Mandarin Oriental расположен на западном побережье Корниш в Абу-Даби. Отель известен частным пляжем и ресторанами международной кухни.",
+      "rating": null,
+      "reviews": [],
+      "viewers": null,
+      "roomsLeft": null
+    },
+    {
+      "country": "Турция",
+      "city": "Белек",
+      "name": "Maxx Royal Belek Golf Resort",
+      "officialUrl": "https://www.maxxroyal.com/maxx-royal-belek",
+      "desc": "Пятизвёздочный курорт Maxx Royal в Белеке на побережье Средиземного моря. Варианты размещения включают люксы и виллы; среди особенностей — гольф и сервис Maxx Assistant.",
+      "locationDescription": "Белек, провинция Анталья, Турция. Курорт у Средиземного моря.",
+      "amenities": [
+        "Пляж и бассейны",
+        "Гольф-клуб Colin Montgomerie",
+        "Детская зона Maxxi Land",
+        "Сервис Maxx Assistant"
+      ],
+      "roomTypes": [
+        "Люксы",
+        "Lagoon Suites",
+        "Виллы"
+      ],
+      "dining": "В отеле есть рестораны и бары. Концепция Ultra All-Inclusive относится к конкретному тарифу и должна быть подтверждена при бронировании.",
+      "stars": 5,
+      "price": 1800000,
+      "meal": "Ultra All-Inclusive по тарифу",
+      "mealPlans": [
+        "Питание по тарифу отеля"
+      ],
+      "beach": "Средиземноморское побережье",
+      "photos": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1a/MAXX_ROYAL_BELEK_5%282015%29_-_panoramio.jpg/1280px-MAXX_ROYAL_BELEK_5%282015%29_-_panoramio.jpg",
+          "alt": "Maxx Royal Belek, внешний вид",
+          "credit": "edykbo",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:MAXX_ROYAL_BELEK_5(2015)_-_panoramio.jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5f/MAXX_ROYAL_BELEK_5%282015%29_-_panoramio_%2811%29.jpg/1280px-MAXX_ROYAL_BELEK_5%282015%29_-_panoramio_%2811%29.jpg",
+          "alt": "Maxx Royal Belek, территория",
+          "credit": "edykbo",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:MAXX_ROYAL_BELEK_5(2015)_-_panoramio_(11).jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/28/MAXX_ROYAL_BELEK_5%282015%29_-_panoramio_%2813%29.jpg/1280px-MAXX_ROYAL_BELEK_5%282015%29_-_panoramio_%2813%29.jpg",
+          "alt": "Maxx Royal Belek, вид на курорт",
+          "credit": "edykbo",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:MAXX_ROYAL_BELEK_5(2015)_-_panoramio_(13).jpg"
+        }
+      ],
+      "id": "h-3",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1a/MAXX_ROYAL_BELEK_5%282015%29_-_panoramio.jpg/1280px-MAXX_ROYAL_BELEK_5%282015%29_-_panoramio.jpg",
+      "description": "Пятизвёздочный курорт Maxx Royal в Белеке на побережье Средиземного моря. Варианты размещения включают люксы и виллы; среди особенностей — гольф и сервис Maxx Assistant.",
+      "rating": null,
+      "reviews": [],
+      "viewers": null,
+      "roomsLeft": null
+    },
+    {
+      "country": "Турция",
+      "city": "Белек",
+      "name": "Rixos Premium Belek",
+      "officialUrl": "https://www.rixos.com/hotel-resort/rixos-premium-belek",
+      "desc": "Курорт Rixos Premium Belek находится в Белеке на средиземноморском побережье Турции. Название и фотографии относятся именно к отелю в Белеке, а не к отдельному отелю в центре Антальи.",
+      "locationDescription": "Белек, район Серик, провинция Анталья, Турция.",
+      "amenities": [
+        "Курортная территория",
+        "Бассейны и зоны отдыха",
+        "Рестораны на территории"
+      ],
+      "roomTypes": [
+        "Номера и люксы; категорию и наличие нужно проверить на выбранные даты"
+      ],
+      "dining": "Состав питания и включённые рестораны зависят от тарифа и даты проживания.",
+      "stars": 5,
+      "price": 1400000,
+      "meal": "Питание по выбранному тарифу",
+      "mealPlans": [
+        "Питание по тарифу отеля"
+      ],
+      "beach": "Побережье Средиземного моря",
+      "photos": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/81/RIXOS_PREMIUM_BELEK_5_%282015%29_-_panoramio.jpg/1280px-RIXOS_PREMIUM_BELEK_5_%282015%29_-_panoramio.jpg",
+          "alt": "Rixos Premium Belek, внешний вид",
+          "credit": "edykbo",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:RIXOS_PREMIUM_BELEK_5_(2015)_-_panoramio.jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/57/RIXOS_PREMIUM_BELEK_5_%282015%29_-_panoramio_%281%29.jpg/1280px-RIXOS_PREMIUM_BELEK_5_%282015%29_-_panoramio_%281%29.jpg",
+          "alt": "Rixos Premium Belek, территория",
+          "credit": "edykbo",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:RIXOS_PREMIUM_BELEK_5_(2015)_-_panoramio_(1).jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c6/RIXOS_PREMIUM_BELEK_5_%282015%29_-_panoramio_%282%29.jpg/1280px-RIXOS_PREMIUM_BELEK_5_%282015%29_-_panoramio_%282%29.jpg",
+          "alt": "Rixos Premium Belek, вид на курорт",
+          "credit": "edykbo",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:RIXOS_PREMIUM_BELEK_5_(2015)_-_panoramio_(2).jpg"
+        }
+      ],
+      "id": "h-4",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/81/RIXOS_PREMIUM_BELEK_5_%282015%29_-_panoramio.jpg/1280px-RIXOS_PREMIUM_BELEK_5_%282015%29_-_panoramio.jpg",
+      "description": "Курорт Rixos Premium Belek находится в Белеке на средиземноморском побережье Турции. Название и фотографии относятся именно к отелю в Белеке, а не к отдельному отелю в центре Антальи.",
+      "rating": null,
+      "reviews": [],
+      "viewers": null,
+      "roomsLeft": null
+    },
+    {
+      "country": "Таиланд",
+      "city": "Пхукет",
+      "name": "Katathani Phuket Beach Resort",
+      "officialUrl": "https://www.katathani.com/",
+      "desc": "Пляжный курорт на пляже Ката-Ной на Пхукете. По информации отеля, территория расположена вдоль примерно 850-метрового участка пляжа; в комплексе есть отдельные корпуса для размещения.",
+      "locationDescription": "Пляж Ката-Ной, Пхукет, Таиланд. Отель находится у моря.",
+      "amenities": [
+        "Пляж Ката-Ной",
+        "Спа-услуги",
+        "Несколько корпусов",
+        "Рестораны и зоны отдыха"
+      ],
+      "roomTypes": [
+        "Номера в корпусах Thani Wing и Bhuri Wing; точный тип зависит от тарифа"
+      ],
+      "dining": "На территории доступны рестораны. Завтрак и другие приёмы пищи включаются только в отдельных тарифах.",
+      "stars": 5,
+      "price": 1100000,
+      "meal": "Питание по выбранному тарифу",
+      "mealPlans": [
+        "Без питания",
+        "Завтрак",
+        "Полупансион"
+      ],
+      "beach": "Пляж Ката-Ной",
+      "photos": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/23/Good_maintained_beautiful_courtyard_of_Katathani_Beach_Resort_Phuket_-_panoramio.jpg/1280px-Good_maintained_beautiful_courtyard_of_Katathani_Beach_Resort_Phuket_-_panoramio.jpg",
+          "alt": "Katathani Phuket Beach Resort, территория",
+          "credit": "yuichiro anazawa",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Good_maintained_beautiful_courtyard_of_Katathani_Beach_Resort_Phuket_-_panoramio.jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f7/Katathani_Phuket_Beach_Resort_-_panoramio.jpg/1280px-Katathani_Phuket_Beach_Resort_-_panoramio.jpg",
+          "alt": "Katathani Phuket Beach Resort, здание курорта",
+          "credit": "yuichiro anazawa",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Katathani_Phuket_Beach_Resort_-_panoramio.jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/Katathani_Phuket_Beach_Resort_-_panoramio_%281%29.jpg/1280px-Katathani_Phuket_Beach_Resort_-_panoramio_%281%29.jpg",
+          "alt": "Katathani Phuket Beach Resort, вид на отель",
+          "credit": "yuichiro anazawa",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Katathani_Phuket_Beach_Resort_-_panoramio_(1).jpg"
+        }
+      ],
+      "id": "h-5",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/23/Good_maintained_beautiful_courtyard_of_Katathani_Beach_Resort_Phuket_-_panoramio.jpg/1280px-Good_maintained_beautiful_courtyard_of_Katathani_Beach_Resort_Phuket_-_panoramio.jpg",
+      "description": "Пляжный курорт на пляже Ката-Ной на Пхукете. По информации отеля, территория расположена вдоль примерно 850-метрового участка пляжа; в комплексе есть отдельные корпуса для размещения.",
+      "rating": 5,
+      "reviews": [
+        {
+          "id": "review-1794824670534",
+          "userId": "u-1",
+          "author": "Арман Смагулов",
+          "date": "16.11.2026",
+          "rating": 5,
+          "text": "круто",
+          "likes": 12
+        }
+      ],
+      "viewers": null,
+      "roomsLeft": null
+    },
+    {
+      "country": "Египет",
+      "city": "Шарм-эль-Шейх",
+      "name": "Sultan Gardens Resort",
+      "officialUrl": "https://www.sultangardens.com/",
+      "desc": "Курорт Sultan Gardens Resort расположен в Шарм-эш-Шейхе. На фотографиях показана территория именно этого отеля; конкретные услуги и состав питания следует проверять по тарифу.",
+      "locationDescription": "Шарм-эш-Шейх, Египет, на побережье Красного моря.",
+      "amenities": [
+        "Бассейны и открытые зоны отдыха",
+        "Пляжная зона",
+        "Рестораны на территории"
+      ],
+      "roomTypes": [
+        "Номера и семейные варианты; конкретную категорию проверяйте по датам"
+      ],
+      "dining": "Доступны рестораны отеля. Включённость питания и напитков определяется условиями выбранного пакета.",
+      "stars": 5,
+      "price": 850000,
+      "meal": "Питание по выбранному тарифу",
+      "mealPlans": [
+        "Питание по тарифу отеля"
+      ],
+      "beach": "Побережье Красного моря",
+      "photos": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cf/Sharm_el_Sheikh%2C_Sultan_Gardens_Resort_-_panoramio_%2810%29.jpg/1280px-Sharm_el_Sheikh%2C_Sultan_Gardens_Resort_-_panoramio_%2810%29.jpg",
+          "alt": "Sultan Gardens Resort, территория",
+          "credit": "Tanya Dedyukhina",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sharm_el_Sheikh%2C_Sultan_Gardens_Resort_-_panoramio_(10).jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/Sharm_el_Sheikh%2C_Sultan_Gardens_Resort_-_panoramio_%2812%29.jpg/1280px-Sharm_el_Sheikh%2C_Sultan_Gardens_Resort_-_panoramio_%2812%29.jpg",
+          "alt": "Sultan Gardens Resort, здания",
+          "credit": "Tanya Dedyukhina",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sharm_el_Sheikh%2C_Sultan_Gardens_Resort_-_panoramio_(12).jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0e/Sharm_el_Sheikh%2C_Sultan_Gardens_Resort_-_panoramio_%2813%29.jpg/1280px-Sharm_el_Sheikh%2C_Sultan_Gardens_Resort_-_panoramio_%2813%29.jpg",
+          "alt": "Sultan Gardens Resort, общий вид",
+          "credit": "Tanya Dedyukhina",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sharm_el_Sheikh%2C_Sultan_Gardens_Resort_-_panoramio_(13).jpg"
+        }
+      ],
+      "id": "h-6",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cf/Sharm_el_Sheikh%2C_Sultan_Gardens_Resort_-_panoramio_%2810%29.jpg/1280px-Sharm_el_Sheikh%2C_Sultan_Gardens_Resort_-_panoramio_%2810%29.jpg",
+      "description": "Курорт Sultan Gardens Resort расположен в Шарм-эш-Шейхе. На фотографиях показана территория именно этого отеля; конкретные услуги и состав питания следует проверять по тарифу.",
+      "rating": null,
+      "reviews": [],
+      "viewers": null,
+      "roomsLeft": null
+    },
+    {
+      "country": "Мальдивы",
+      "city": "Южный Ари Атолл",
+      "name": "Lily Beach Resort & Spa",
+      "officialUrl": "https://www.lilybeachmaldives.com/",
+      "desc": "Курорт на острове Хувахенду в Южном Ари Атолле. В официальном каталоге размещения перечислены пляжные виллы, виллы у лагуны и водные виллы; у некоторых категорий есть собственный бассейн или выход к лагуне.",
+      "locationDescription": "Остров Хувахенду, Южный Ари Атолл, Мальдивы. Трансфер до острова зависит от пакета и расписания.",
+      "amenities": [
+        "Пляжные и водные виллы",
+        "Прямой доступ к лагуне у отдельных категорий",
+        "Спа и водные активности"
+      ],
+      "roomTypes": [
+        "Beach Villa",
+        "Lagoon Villa",
+        "Deluxe Water Villa",
+        "Beach Residence with Pool"
+      ],
+      "dining": "На официальном сайте описан пакет Platinum Plan. Проверьте перечень включённых блюд, напитков и активностей в актуальных условиях тарифа.",
+      "stars": 5,
+      "price": 3500000,
+      "meal": "Platinum Plan доступен по тарифу",
+      "mealPlans": [
+        "Platinum Plan — проверить состав тарифа"
+      ],
+      "beach": "Островные пляжи и лагуна",
+      "photos": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Lily_Beach_Island_Resort_Hotel_%E8%8D%94%E8%8D%94%E5%B3%B6%E7%81%98%E5%BA%A6%E5%81%87%E6%9D%91_-_panoramio.jpg/1280px-Lily_Beach_Island_Resort_Hotel_%E8%8D%94%E8%8D%94%E5%B3%B6%E7%81%98%E5%BA%A6%E5%81%87%E6%9D%91_-_panoramio.jpg",
+          "alt": "Lily Beach Resort, вид на остров",
+          "credit": "lienyuan lee",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Lily_Beach_Island_Resort_Hotel_%E8%8D%94%E8%8D%94%E5%B3%B6%E7%81%98%E5%BA%A6%E5%81%87%E6%9D%91_-_panoramio.jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/Lily_Beach_Island_Resort_Hotel_%E9%BA%97%E5%8A%9B%E6%B5%B7%E5%B3%B6%E6%B8%A1%E5%81%87%E6%9D%91_-_panoramio.jpg/1280px-Lily_Beach_Island_Resort_Hotel_%E9%BA%97%E5%8A%9B%E6%B5%B7%E5%B3%B6%E6%B8%A1%E5%81%87%E6%9D%91_-_panoramio.jpg",
+          "alt": "Lily Beach Resort, виллы у воды",
+          "credit": "lienyuan lee",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Lily_Beach_Island_Resort_Hotel_%E9%BA%97%E5%8A%9B%E6%B5%B7%E5%B3%B6%E6%B8%A1%E5%81%87%E6%9D%91_-_panoramio.jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6b/Lily_Beach_Island_Resort_Hotel_%E9%BA%97%E9%BA%97%E6%B5%B7%E7%81%98%E6%B8%A1%E5%81%87%E6%9D%91_-_panoramio.jpg/1280px-Lily_Beach_Island_Resort_Hotel_%E9%BA%97%E9%BA%97%E6%B5%B7%E7%81%98%E6%B8%A1%E5%81%87%E6%9D%91_-_panoramio.jpg",
+          "alt": "Lily Beach Resort, береговая линия",
+          "credit": "lienyuan lee",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Lily_Beach_Island_Resort_Hotel_%E9%BA%97%E9%BA%97%E6%B5%B7%E7%81%98%E6%B8%A1%E5%81%87%E6%9D%91_-_panoramio.jpg"
+        }
+      ],
+      "id": "h-7",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Lily_Beach_Island_Resort_Hotel_%E8%8D%94%E8%8D%94%E5%B3%B6%E7%81%98%E5%BA%A6%E5%81%87%E6%9D%91_-_panoramio.jpg/1280px-Lily_Beach_Island_Resort_Hotel_%E8%8D%94%E8%8D%94%E5%B3%B6%E7%81%98%E5%BA%A6%E5%81%87%E6%9D%91_-_panoramio.jpg",
+      "description": "Курорт на острове Хувахенду в Южном Ари Атолле. В официальном каталоге размещения перечислены пляжные виллы, виллы у лагуны и водные виллы; у некоторых категорий есть собственный бассейн или выход к лагуне.",
+      "rating": null,
+      "reviews": [],
+      "viewers": null,
+      "roomsLeft": null
+    },
+    {
+      "country": "Мальдивы",
+      "city": "Атолл Баа",
+      "name": "Soneva Fushi",
+      "officialUrl": "https://soneva.com/resorts/soneva-fushi/",
+      "desc": "Островной курорт Soneva Fushi в атолле Баа: виллы среди зелени и над водой, природные активности, оздоровительные процедуры и рестораны с разными форматами.",
+      "locationDescription": "Остров Кунфунаду, атолл Баа, Мальдивы.",
+      "amenities": [
+        "Островные и водные виллы",
+        "Природные активности",
+        "Спа и оздоровительные занятия",
+        "Детский клуб The Den"
+      ],
+      "roomTypes": [
+        "Виллы среди зелени",
+        "Виллы над водой"
+      ],
+      "dining": "Официальный сайт сообщает о более чем двенадцати вариантах питания и круглосуточных treat rooms. Включённость конкретных блюд зависит от тарифа.",
+      "stars": 5,
+      "price": 3500000,
+      "meal": "Питание по выбранному тарифу",
+      "mealPlans": [
+        "Питание по тарифу отеля"
+      ],
+      "beach": "Островные пляжи",
+      "photos": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c2/Soneva_Fushi_-_panoramio.jpg/1280px-Soneva_Fushi_-_panoramio.jpg",
+          "alt": "Soneva Fushi, вид на остров",
+          "credit": "Ameer Dawood",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Soneva_Fushi_-_panoramio.jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/36/Soneva_Fushi_-_panoramio_%281%29.jpg/1280px-Soneva_Fushi_-_panoramio_%281%29.jpg",
+          "alt": "Soneva Fushi, остров и берег",
+          "credit": "Ameer Dawood",
+          "license": "CC BY 3.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Soneva_Fushi_-_panoramio_(1).jpg"
+        }
+      ],
+      "id": "h-8",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c2/Soneva_Fushi_-_panoramio.jpg/1280px-Soneva_Fushi_-_panoramio.jpg",
+      "description": "Островной курорт Soneva Fushi в атолле Баа: виллы среди зелени и над водой, природные активности, оздоровительные процедуры и рестораны с разными форматами.",
+      "rating": null,
+      "reviews": [],
+      "viewers": null,
+      "roomsLeft": null
+    },
+    {
+      "country": "Вьетнам",
+      "city": "Фукуок",
+      "name": "JW Marriott Phu Quoc Emerald Bay Resort & Spa",
+      "officialUrl": "https://www.marriott.com/en-us/hotels/pqcjw-jw-marriott-phu-quoc-emerald-bay-resort-and-spa/overview/",
+      "desc": "Курорт JW Marriott на пляже Кхем (Бай-Кем) острова Фукуок. Архитектурная концепция оформлена как вымышленный университет; фотографии показывают бассейн Shell Pool и ресторан Pink Pearl.",
+      "locationDescription": "Пляж Кхем, остров Фукуок, Вьетнам.",
+      "amenities": [
+        "Пляж Кхем",
+        "Бассейн Shell Pool",
+        "Спа и рестораны"
+      ],
+      "roomTypes": [
+        "Номера, люксы и виллы; условия зависят от категории и даты"
+      ],
+      "dining": "На территории есть рестораны, в том числе Pink Pearl. Включённое питание зависит от тарифа.",
+      "stars": 5,
+      "price": 1050000,
+      "meal": "Питание по выбранному тарифу",
+      "mealPlans": [
+        "Без питания",
+        "Завтрак",
+        "Полупансион"
+      ],
+      "beach": "Пляж Кхем (Бай-Кем)",
+      "photos": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/96/JW_Marriott_Shell_Pool_Phu_Quoc.jpg/1280px-JW_Marriott_Shell_Pool_Phu_Quoc.jpg",
+          "alt": "JW Marriott Phu Quoc, Shell Pool",
+          "credit": "Vivu Vietnam",
+          "license": "CC BY-SA 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:JW_Marriott_Shell_Pool_Phu_Quoc.jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/be/Jw-marriott-phu-quoc-bai-kem.jpg/1280px-Jw-marriott-phu-quoc-bai-kem.jpg",
+          "alt": "JW Marriott Phu Quoc у пляжа Бай-Кем",
+          "credit": "Vivu Vietnam",
+          "license": "CC BY-SA 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Jw-marriott-phu-quoc-bai-kem.jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/06/Nha-hang-pink-pearl.jpg/1280px-Nha-hang-pink-pearl.jpg",
+          "alt": "Ресторан Pink Pearl в JW Marriott Phu Quoc",
+          "credit": "Vivu Vietnam",
+          "license": "CC BY-SA 4.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Nha-hang-pink-pearl.jpg"
+        }
+      ],
+      "id": "h-9",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/96/JW_Marriott_Shell_Pool_Phu_Quoc.jpg/1280px-JW_Marriott_Shell_Pool_Phu_Quoc.jpg",
+      "description": "Курорт JW Marriott на пляже Кхем (Бай-Кем) острова Фукуок. Архитектурная концепция оформлена как вымышленный университет; фотографии показывают бассейн Shell Pool и ресторан Pink Pearl.",
+      "rating": null,
+      "reviews": [],
+      "viewers": null,
+      "roomsLeft": null
+    },
+    {
+      "country": "Бали",
+      "city": "Нуса Дуа",
+      "name": "Mulia Resort Bali",
+      "officialUrl": "https://www.themulia.com/bali",
+      "desc": "Mulia Resort — один из трёх отдельных форматов размещения в комплексе Mulia Bali. Курорт расположен у пляжа Гегер в Нуса-Дуа; не следует путать его с отдельными объектами The Mulia и Mulia Villas.",
+      "locationDescription": "Нуса-Дуа, Бали, на побережье пляжа Гегер.",
+      "amenities": [
+        "Пляж Гегер",
+        "Бассейны",
+        "Рестораны и зоны отдыха"
+      ],
+      "roomTypes": [
+        "Категории номеров и условия уточняются по выбранным датам"
+      ],
+      "dining": "В комплексе есть несколько ресторанов и форматов питания. Конкретный план питания проверяется по тарифу.",
+      "stars": 5,
+      "price": 1400000,
+      "meal": "Питание по выбранному тарифу",
+      "mealPlans": [
+        "Без питания",
+        "Завтрак",
+        "Полупансион"
+      ],
+      "beach": "Пляж Гегер",
+      "photos": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9e/Mulia_Resort_-_Bali_%2852784714273%29.jpg/1280px-Mulia_Resort_-_Bali_%2852784714273%29.jpg",
+          "alt": "Mulia Resort Bali, вид на курорт",
+          "credit": "Thank You (25 Millions ) views from Fresno, USA",
+          "license": "CC BY 2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Mulia_Resort_-_Bali_(52784714273).jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fa/Mulia_Resort_Bali_%2852339372366%29.jpg/1280px-Mulia_Resort_Bali_%2852339372366%29.jpg",
+          "alt": "Mulia Resort Bali, территория",
+          "credit": "Thank You (25 Millions ) views from Fresno, USA",
+          "license": "CC BY 2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Mulia_Resort_Bali_(52339372366).jpg"
+        },
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/43/Mulia_Resort_Bali_%2852396394700%29.jpg/1280px-Mulia_Resort_Bali_%2852396394700%29.jpg",
+          "alt": "Mulia Resort Bali, архитектура",
+          "credit": "Thank You (25 Millions ) views from Fresno, USA",
+          "license": "CC BY 2.0",
+          "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+          "sourceUrl": "https://commons.wikimedia.org/wiki/File:Mulia_Resort_Bali_(52396394700).jpg"
+        }
+      ],
+      "id": "h-10",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9e/Mulia_Resort_-_Bali_%2852784714273%29.jpg/1280px-Mulia_Resort_-_Bali_%2852784714273%29.jpg",
+      "description": "Mulia Resort — один из трёх отдельных форматов размещения в комплексе Mulia Bali. Курорт расположен у пляжа Гегер в Нуса-Дуа; не следует путать его с отдельными объектами The Mulia и Mulia Villas.",
+      "rating": null,
+      "reviews": [],
+      "viewers": null,
+      "roomsLeft": null
+    }
+  ],
+  "users": [
+    {
+      "id": "u-1",
+      "name": "Арман Смагулов",
+      "phone": "+7 777 123 45 67",
+      "ltv": 3900000,
+      "status": "Platinum",
+      "isBanned": false
+    },
+    {
+      "id": "u-2",
+      "name": "Дильназ Каримова",
+      "phone": "+7 701 555 33 22",
+      "ltv": 450000,
+      "status": "Gold",
+      "isBanned": false
+    },
+    {
+      "id": "u-admin",
+      "name": "Super Admin",
+      "phone": "-",
+      "ltv": 0,
+      "status": "Staff",
+      "isBanned": false
+    },
+    {
+      "id": "u-1795688210998",
+      "name": "Илья",
+      "phone": "+77714142501",
+      "email": "",
+      "ltv": 0,
+      "status": "Standard",
+      "isBanned": false,
+      "createdAt": "26.11.2026"
+    }
+  ],
+  "logs": [
+    {
+      "id": 1795688371310,
+      "time": "15:19",
+      "action": "Вход в аккаунт",
+      "details": "Активный профиль: Илья",
+      "type": "СИСТЕМА",
+      "createdAt": "2026-11-26T10:19:31.311Z"
+    },
+    {
+      "id": 1795688371304,
+      "time": "26.11.2026, 15:19:31",
+      "action": "Вход в аккаунт (API)",
+      "details": "Активный профиль: Илья",
+      "type": "СИСТЕМА"
+    },
+    {
+      "id": 1795688332763,
+      "time": "15:18",
+      "action": "Вход в аккаунт",
+      "details": "Активный профиль: Илья",
+      "type": "СИСТЕМА",
+      "createdAt": "2026-11-26T10:18:52.763Z"
+    },
+    {
+      "id": 1795688332757,
+      "time": "26.11.2026, 15:18:52",
+      "action": "Вход в аккаунт (API)",
+      "details": "Активный профиль: Илья",
+      "type": "СИСТЕМА"
+    },
+    {
+      "id": 1795688332323,
+      "time": "26.11.2026, 15:18:52",
+      "action": "Вход в аккаунт (API)",
+      "details": "Активный профиль: Арман Смагулов",
+      "type": "СИСТЕМА"
+    },
+    {
+      "id": 1795688332310,
+      "time": "15:18",
+      "action": "Вход в аккаунт",
+      "details": "Активный профиль: Арман Смагулов",
+      "type": "СИСТЕМА",
+      "createdAt": "2026-11-26T10:18:52.310Z"
+    },
+    {
+      "id": 1795688331664,
+      "time": "15:18",
+      "action": "Вход в аккаунт",
+      "details": "Активный профиль: Дильназ Каримова",
+      "type": "СИСТЕМА",
+      "createdAt": "2026-11-26T10:18:51.664Z"
+    },
+    {
+      "id": 1795688331654,
+      "time": "26.11.2026, 15:18:51",
+      "action": "Вход в аккаунт (API)",
+      "details": "Активный профиль: Дильназ Каримова",
+      "type": "СИСТЕМА"
+    },
+    {
+      "id": 1795688330861,
+      "time": "15:18",
+      "action": "Вход в аккаунт",
+      "details": "Активный профиль: Илья",
+      "type": "СИСТЕМА",
+      "createdAt": "2026-11-26T10:18:50.862Z"
+    },
+    {
+      "id": 1795688330856,
+      "time": "26.11.2026, 15:18:50",
+      "action": "Вход в аккаунт (API)",
+      "details": "Активный профиль: Илья",
+      "type": "СИСТЕМА"
+    },
+    {
+      "id": 1795688330530,
+      "time": "15:18",
+      "action": "Вход в аккаунт",
+      "details": "Активный профиль: Дильназ Каримова",
+      "type": "СИСТЕМА",
+      "createdAt": "2026-11-26T10:18:50.530Z"
+    },
+    {
+      "id": 1795688330521,
+      "time": "26.11.2026, 15:18:50",
+      "action": "Вход в аккаунт (API)",
+      "details": "Активный профиль: Дильназ Каримова",
+      "type": "СИСТЕМА"
+    },
+    {
+      "id": 1795688330442,
+      "time": "15:18",
+      "action": "Вход в аккаунт",
+      "details": "Активный профиль: Арман Смагулов",
+      "type": "СИСТЕМА",
+      "createdAt": "2026-11-26T10:18:50.442Z"
+    },
+    {
+      "id": 1795688330436,
+      "time": "26.11.2026, 15:18:50",
+      "action": "Вход в аккаунт (API)",
+      "details": "Активный профиль: Арман Смагулов",
+      "type": "СИСТЕМА"
+    },
+    {
+      "id": 1795688266257,
+      "time": "15:17",
+      "action": "Вход в аккаунт",
+      "details": "Активный профиль: Илья",
+      "type": "СИСТЕМА",
+      "createdAt": "2026-11-26T10:17:46.258Z"
+    },
+    {
+      "id": 1795688263334,
+      "time": "15:17",
+      "action": "Вход в аккаунт",
+      "details": "Активный профиль: Дильназ Каримова",
+      "type": "СИСТЕМА",
+      "createdAt": "2026-11-26T10:17:43.335Z"
+    },
+    {
+      "id": 1795688262091,
+      "time": "15:17",
+      "action": "Вход в аккаунт",
+      "details": "Активный профиль: Арман Смагулов",
+      "type": "СИСТЕМА",
+      "createdAt": "2026-11-26T10:17:42.091Z"
+    },
+    {
+      "id": 1795688261058,
+      "time": "15:17",
+      "action": "Вход в аккаунт",
+      "details": "Активный профиль: Дильназ Каримова",
+      "type": "СИСТЕМА",
+      "createdAt": "2026-11-26T10:17:41.058Z"
+    },
+    {
+      "id": 1795688211192,
+      "time": "15:16",
+      "action": "Регистрация",
+      "details": "Создан аккаунт: Илья (+77714142501)",
+      "type": "СИСТЕМА",
+      "createdAt": "2026-11-26T10:16:51.193Z"
+    },
+    {
+      "id": 1795687844013,
+      "time": "15:10",
+      "action": "Демо-бронирование",
+      "details": "Пользователь Арман Смагулов оформил демо-тур в Atlantis, The Palm за 2 400 000 ₸",
+      "type": "ПОКУПКА",
+      "createdAt": "2026-11-26T10:10:44.013Z"
+    }
+  ],
+  "sessions": {
+    "10835c37dfab8970a5c57b503e2b3644de5d4ff8656b8635": {
+      "userId": "u-1",
+      "createdAt": "2026-11-26T10:18:50.434Z"
+    },
+    "3cc8bb4bf8112b0f86c07c18bc63a4f7a6b8fed3c5645d03": {
+      "userId": "u-2",
+      "createdAt": "2026-11-26T10:18:50.520Z"
+    },
+    "2b408c2ff65960b44362de75281845f591c208ecb956aace": {
+      "userId": "u-1795688210998",
+      "createdAt": "2026-11-26T10:18:50.854Z"
+    },
+    "6eb7ed010730c9942161d52a5430f12c3e9d4ac0026555a0": {
+      "userId": "u-2",
+      "createdAt": "2026-11-26T10:18:51.653Z"
+    },
+    "dedf5f38a74eb3973a27d0322b8fd1edb2746ca8ac59a8cc": {
+      "userId": "u-1",
+      "createdAt": "2026-11-26T10:18:52.321Z"
+    },
+    "275fbfa86c58045c816a6b0335a3d589f67428d61675090e": {
+      "userId": "u-1795688210998",
+      "createdAt": "2026-11-26T10:19:31.304Z"
+    }
+  },
+  "userStates": {},
+  "destinations": []
+}
