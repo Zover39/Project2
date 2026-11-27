@@ -1,6 +1,7 @@
 const { randomUUID } = require('node:crypto');
 const { z } = require('zod');
 const { getPool } = require('../../../server/db');
+const { recordAudit } = require('../../../server/audit');
 const { ApiError, ensureSameOrigin, handleApiError, methodNotAllowed, requireJsonBody } = require('../../../server/http');
 const { createSession, serializeUser, writeSessionCookie } = require('../../../server/auth');
 const { normalizePhone } = require('../../../server/phone');
@@ -68,6 +69,9 @@ export default async function handler(req, res) {
          RETURNING id, name, phone_e164, email, role, is_banned, created_at`,
         [userId, body.name.trim(), phone, body.email || null]
       );
+      await recordAudit(client, {
+        actorId: userId, action: 'account_registered', subjectType: 'user', subjectId: userId
+      });
     } else if (!userResult.rowCount) {
       throw new ApiError(404, 'Аккаунт не найден. Зарегистрируйтесь, чтобы продолжить');
     }

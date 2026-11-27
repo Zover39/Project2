@@ -98,9 +98,9 @@ export default function HotelBookingModal({ app }) {
     }
   };
 
-  const handleReviewSubmit = event => {
+  const handleReviewSubmit = async event => {
     event.preventDefault();
-    if (submitReview(activeHotel.id, newReviewRating, reviewText)) setReviewText('');
+    if (await submitReview(activeHotel.id, newReviewRating, reviewText)) setReviewText('');
   };
 
   return (

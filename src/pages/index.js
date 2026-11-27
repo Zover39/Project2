@@ -47,7 +47,8 @@ const EMPTY_PERSONAL_DATA = {
   favorites: [],
   favoriteNotes: {},
   recentlyViewedIds: [],
-  compareIds: []
+  compareIds: [],
+  theme: 'light'
 };
 const personalDataKey = userId => `at_personal_data_${userId || 'guest'}`;
 
@@ -97,6 +98,10 @@ export default function AstanaTravelApp() {
   const [backendUser, setBackendUser] = useState(null);
   const [backendPendingInvitations, setBackendPendingInvitations] = useState([]);
   const [backendError, setBackendError] = useState('');
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+  const preferencesRef = useRef(EMPTY_PERSONAL_DATA);
+  const preferenceWriteRef = useRef(Promise.resolve());
+  const preferenceTimerRef = useRef(null);
   const [activeTab, setActiveTab] = useState('catalog'); 
   const [theme, setTheme] = useState('light');
 
@@ -263,7 +268,10 @@ export default function AstanaTravelApp() {
     if (sTheme) setTheme(sTheme);
   }, []);
 
-  useEffect(() => () => clearTimeout(toastTimerRef.current), []);
+  useEffect(() => () => {
+    clearTimeout(toastTimerRef.current);
+    clearTimeout(preferenceTimerRef.current);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -295,30 +303,49 @@ export default function AstanaTravelApp() {
   useEffect(() => {
     if (backendMode !== 'backend') return;
     let active = true;
-    if (!backendUser) {
-      setBookings([]);
-      setBackendPendingInvitations([]);
-      setUsers([]);
-      return () => { active = false; };
-    }
+    setPreferencesLoaded(false);
+    const userRequests = backendUser
+      ? [
+          apiRequest('/api/bookings'),
+          backendUser.role === 'admin' ? apiRequest('/api/admin/users') : Promise.resolve({ users: [backendUser] }),
+          backendUser.role === 'admin' ? apiRequest('/api/admin/audit') : Promise.resolve({ logs: [] }),
+          apiRequest('/api/account/preferences'),
+          backendUser.role === 'admin' ? apiRequest('/api/admin/catalog') : Promise.resolve({ batch: null })
+        ]
+      : [Promise.resolve({ bookings: [], pendingInvitations: [] }), Promise.resolve({ users: [] }), Promise.resolve({ logs: [] }), Promise.resolve({ preferences: EMPTY_PERSONAL_DATA }), Promise.resolve({ batch: null })];
 
-    Promise.all([
-      apiRequest('/api/bookings'),
-      backendUser.role === 'admin' ? apiRequest('/api/admin/users') : Promise.resolve({ users: [backendUser] })
-    ])
-      .then(([bookingData, userData]) => {
+    Promise.all([apiRequest('/api/catalog', { cache: 'no-store' }), ...userRequests])
+      .then(([catalogData, bookingData, userData, auditData, preferenceData, priceBatchData]) => {
         if (!active) return;
+        setHotels(catalogData.hotels);
+        setDestinationDirectory(catalogData.destinationDirectory);
         setBookings(bookingData.bookings);
         setBackendPendingInvitations(bookingData.pendingInvitations);
         setUsers(userData.users);
+        setLogs(auditData.logs);
+        setFavorites(preferenceData.preferences.favorites);
+        setFavoriteNotes(preferenceData.preferences.favoriteNotes);
+        setRecentlyViewedIds(preferenceData.preferences.recentlyViewedIds);
+        setCompareIds(preferenceData.preferences.compareIds);
+        if (backendUser) setTheme(preferenceData.preferences.theme);
+        preferencesRef.current = preferenceData.preferences;
+        setLastBulkPriceChange(priceBatchData.batch);
+        setPreferencesLoaded(true);
         setBackendError('');
       })
       .catch(error => {
         if (!active) return;
+        setPreferencesLoaded(false);
         setBackendError(error.message);
       });
     return () => { active = false; };
   }, [backendMode, backendUser?.id, backendUser?.role]);
+
+  useEffect(() => {
+    if (backendMode === 'backend' && backendUser && preferencesLoaded && preferencesRef.current.theme !== theme) {
+      savePersonalData('theme', theme);
+    }
+  }, [theme, backendMode, backendUser?.id, preferencesLoaded]);
 
   useEffect(() => {
     if (theme === 'dark') document.documentElement.classList.add('dark');
@@ -395,6 +422,37 @@ export default function AstanaTravelApp() {
     return [];
   };
 
+  const refreshBackendCatalog = async () => {
+    const data = await apiRequest('/api/catalog', { cache: 'no-store' });
+    setHotels(data.hotels);
+    setDestinationDirectory(data.destinationDirectory);
+    return data;
+  };
+
+  const refreshBackendPreferences = async (user = backendUser) => {
+    if (!user) {
+      preferencesRef.current = EMPTY_PERSONAL_DATA;
+      setFavorites([]);
+      setFavoriteNotes({});
+      setRecentlyViewedIds([]);
+      setCompareIds([]);
+      return EMPTY_PERSONAL_DATA;
+    }
+    const data = await apiRequest('/api/account/preferences', { cache: 'no-store' });
+    preferencesRef.current = data.preferences;
+    setFavorites(data.preferences.favorites);
+    setFavoriteNotes(data.preferences.favoriteNotes);
+    setRecentlyViewedIds(data.preferences.recentlyViewedIds);
+    setCompareIds(data.preferences.compareIds);
+    return data.preferences;
+  };
+
+  const refreshBackendAudit = async () => {
+    if (backendUser?.role !== 'admin') return;
+    const data = await apiRequest('/api/admin/audit', { cache: 'no-store' });
+    setLogs(data.logs);
+  };
+
   const navigateToTab = (tab) => {
     if (tab.startsWith('admin-') && (backendMode !== 'demo' && backendUser?.role !== 'admin')) {
       pushToast('Для панели администратора нужен подтверждённый аккаунт администратора');
@@ -468,15 +526,62 @@ export default function AstanaTravelApp() {
   };
 
   const logAction = (action, details, type = 'СИСТЕМА', subjectUserId = '') => {
+    if (backendMode === 'backend') return;
     const newLog = { id: Date.now(), time: new Date().toLocaleString('ru-RU'), action, details, type, subjectUserId };
     const newLogs = [newLog, ...logs];
     setLogs(newLogs);
     localStorage.setItem('at_logs', JSON.stringify(newLogs));
   };
 
-  const syncHotels = (newH) => { setHotels(newH); localStorage.setItem('at_hotels_v2', JSON.stringify(newH)); };
+  const syncHotels = (newH) => {
+    if (backendMode === 'backend') {
+      pushToast('Изменения каталога должны быть сохранены через серверную операцию');
+      return;
+    }
+    setHotels(newH);
+    localStorage.setItem('at_hotels_v2', JSON.stringify(newH));
+  };
   const syncUsers = (newU) => { setUsers(newU); localStorage.setItem('at_users', JSON.stringify(newU)); };
+  const queueBackendPreferencesWrite = preferences => {
+    preferenceWriteRef.current = preferenceWriteRef.current.catch(() => {}).then(() => apiRequest('/api/account/preferences', {
+      method: 'PUT',
+      body: JSON.stringify(preferences)
+    })).then(({ preferences: savedPreferences }) => {
+      if (preferencesRef.current !== preferences) return;
+      preferencesRef.current = savedPreferences;
+      setFavorites(savedPreferences.favorites);
+      setFavoriteNotes(savedPreferences.favoriteNotes);
+      setRecentlyViewedIds(savedPreferences.recentlyViewedIds);
+      setCompareIds(savedPreferences.compareIds);
+      if (savedPreferences.theme !== theme) setTheme(savedPreferences.theme);
+    }).catch(error => {
+      if (preferencesRef.current !== preferences) return;
+      pushToast(error.message);
+      refreshBackendPreferences().catch(refreshError => pushToast(refreshError.message));
+    });
+  };
   const savePersonalData = (field, value, userId = currentUserId) => {
+    if (backendMode === 'backend') {
+      if (!currentUser) {
+        pushToast('Войдите в аккаунт, чтобы сохранять личные списки');
+        return null;
+      }
+      const current = {
+        ...preferencesRef.current
+      };
+      const updated = { ...current, [field]: value };
+      preferencesRef.current = updated;
+      if (field === 'favoriteNotes') {
+        clearTimeout(preferenceTimerRef.current);
+        preferenceTimerRef.current = window.setTimeout(
+          () => queueBackendPreferencesWrite(preferencesRef.current),
+          350
+        );
+      } else {
+        queueBackendPreferencesWrite(updated);
+      }
+      return updated;
+    }
     const data = readPersonalData(userId) || { ...EMPTY_PERSONAL_DATA };
     const updated = { ...data, [field]: value };
     localStorage.setItem(personalDataKey(userId), JSON.stringify(updated));
@@ -505,6 +610,14 @@ export default function AstanaTravelApp() {
     localStorage.setItem(personalDataKey(userId), JSON.stringify(next));
   };
   const syncDestinationDirectory = directory => {
+    if (backendMode === 'backend') {
+      apiRequest('/api/admin/destinations', {
+        method: 'PUT',
+        body: JSON.stringify({ directory })
+      }).then(data => setDestinationDirectory(data.destinationDirectory))
+        .catch(error => pushToast(error.message));
+      return;
+    }
     setDestinationDirectory(directory);
     localStorage.setItem(DESTINATION_DIRECTORY_KEY, JSON.stringify(directory));
   };
@@ -622,6 +735,24 @@ export default function AstanaTravelApp() {
     if (!hotel) {
       pushToast('Отель не найден');
       return false;
+    }
+    if (backendMode === 'backend') {
+      return (async () => {
+        try {
+          await apiRequest(`/api/admin/catalog/${encodeURIComponent(hotelId)}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ action: 'archive', archived })
+          });
+          await refreshBackendCatalog();
+          await refreshBackendAudit();
+          if (archived && activeHotel?.id === hotelId) closeHotel();
+          pushToast(archived ? 'Отель скрыт из каталога, история сохранена' : 'Отель снова опубликован');
+          return true;
+        } catch (error) {
+          pushToast(error.message);
+          return false;
+        }
+      })();
     }
     const updated = hotels.map(item => item.id === hotelId
       ? { ...item, status: archived ? 'archived' : 'published' }
@@ -1615,6 +1746,26 @@ export default function AstanaTravelApp() {
       pushToast('Для выбранной страны нет отелей в каталоге');
       return;
     }
+    if (backendMode === 'backend') {
+      return (async () => {
+        try {
+          const data = await apiRequest('/api/admin/catalog', {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'bulk_price',
+              country: bulkConfig.country,
+              percent: bulkConfig.percent
+            })
+          });
+          setLastBulkPriceChange(data.batch);
+          await refreshBackendCatalog();
+          await refreshBackendAudit();
+          pushToast('Цены успешно обновлены');
+        } catch (error) {
+          pushToast(error.message);
+        }
+      })();
+    }
     const multiplier = 1 + (bulkConfig.percent / 100);
     const priceChanges = affectedHotels.map(hotel => ({
       id: hotel.id,
@@ -1653,6 +1804,26 @@ export default function AstanaTravelApp() {
     if (!lastBulkPriceChange?.priceChanges?.length) {
       pushToast('Нет массового изменения для отмены');
       return;
+    }
+    if (backendMode === 'backend') {
+      if (!lastBulkPriceChange.id) {
+        pushToast('Для отмены войдите повторно и загрузите историю с сервера');
+        return;
+      }
+      return (async () => {
+        try {
+          await apiRequest('/api/admin/catalog', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'undo_bulk_price', batchId: lastBulkPriceChange.id })
+          });
+          setLastBulkPriceChange(null);
+          await refreshBackendCatalog();
+          await refreshBackendAudit();
+          pushToast('Предыдущее массовое изменение цен отменено');
+        } catch (error) {
+          pushToast(error.message);
+        }
+      })();
     }
     const conflicts = lastBulkPriceChange.priceChanges.filter(change => {
       const hotel = hotels.find(item => item.id === change.id);
@@ -1708,6 +1879,34 @@ export default function AstanaTravelApp() {
       return;
     }
     const photoUrls = [image, ...gallery].filter(Boolean);
+
+    if (backendMode === 'backend') {
+      return (async () => {
+        try {
+          const hotel = { ...normalizedForm, image, gallery };
+          if (editingHotelId) {
+            await apiRequest(`/api/admin/catalog/${encodeURIComponent(editingHotelId)}`, {
+              method: 'PUT',
+              body: JSON.stringify({ action: 'save', hotel })
+            });
+          } else {
+            await apiRequest('/api/admin/catalog/create', {
+              method: 'POST',
+              body: JSON.stringify({ hotel })
+            });
+          }
+          await refreshBackendCatalog();
+          await refreshBackendAudit();
+          pushToast(editingHotelId ? 'Информация об отеле успешно обновлена' : 'Новый отель добавлен в каталог');
+          setEditingHotelId(null);
+          setHotelForm({ name: '', price: 0, image: '', country: 'ОАЭ', city: 'Дубай', meal: 'Ultra All Inclusive', beach: 'Песчаный', stars: 5, description: '', gallery: '' });
+          return true;
+        } catch (error) {
+          pushToast(error.message);
+          return false;
+        }
+      })();
+    }
     
     if (editingHotelId) {
       const updated = hotels.map(h => {
@@ -1840,6 +2039,23 @@ export default function AstanaTravelApp() {
       pushToast('Вы уже отправили отзыв об этом отеле');
       return false;
     }
+    if (backendMode === 'backend') {
+      return (async () => {
+        try {
+          await apiRequest('/api/reviews', {
+            method: 'POST',
+            body: JSON.stringify({ hotelId, rating: reviewRating, text: reviewText })
+          });
+          await refreshBackendCatalog();
+          await refreshBackendAudit();
+          pushToast('Отзыв отправлен на проверку модератору');
+          return true;
+        } catch (error) {
+          pushToast(error.message);
+          return false;
+        }
+      })();
+    }
 
     const review = {
       id: `review-${Date.now()}`,
@@ -1882,6 +2098,23 @@ export default function AstanaTravelApp() {
       pushToast('Отзыв не найден');
       return false;
     }
+    if (backendMode === 'backend') {
+      return (async () => {
+        try {
+          await apiRequest(`/api/reviews/${encodeURIComponent(reviewId)}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ action: 'moderate', status })
+          });
+          await refreshBackendCatalog();
+          await refreshBackendAudit();
+          pushToast(status === 'published' ? 'Отзыв опубликован' : 'Отзыв отклонён');
+          return true;
+        } catch (error) {
+          pushToast(error.message);
+          return false;
+        }
+      })();
+    }
     const newHotels = hotels.map(item => {
       if (item.id !== hotelId) return item;
       const reviews = item.reviews.map(review =>
@@ -1909,6 +2142,18 @@ export default function AstanaTravelApp() {
     if (!hotel?.reviews?.some(review => review.id === reviewId)) {
       pushToast('Отзыв не найден');
       return;
+    }
+    if (backendMode === 'backend') {
+      return (async () => {
+        try {
+          await apiRequest(`/api/reviews/${encodeURIComponent(reviewId)}`, { method: 'DELETE' });
+          await refreshBackendCatalog();
+          await refreshBackendAudit();
+          pushToast('Отзыв удалён');
+        } catch (error) {
+          pushToast(error.message);
+        }
+      })();
     }
     const newHotels = hotels.map(h => {
       if (h.id === hotelId) {
@@ -1938,6 +2183,22 @@ export default function AstanaTravelApp() {
       pushToast('Отзыв не найден');
       return;
     }
+    if (backendMode === 'backend') {
+      return (async () => {
+        try {
+          await apiRequest(`/api/reviews/${encodeURIComponent(reviewId)}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ action: 'reply', text: reply })
+          });
+          await refreshBackendCatalog();
+          await refreshBackendAudit();
+          setAdminReplyText({ ...adminReplyText, [reviewId]: '' });
+          pushToast('Ответ опубликован');
+        } catch (error) {
+          pushToast(error.message);
+        }
+      })();
+    }
     const newHotels = hotels.map(h => {
       if (h.id === hotelId) {
         return {
@@ -1954,6 +2215,27 @@ export default function AstanaTravelApp() {
   };
 
   const likeReview = (hotelId, reviewId) => {
+    if (backendMode === 'backend') {
+      if (!currentUser) {
+        pushToast('Войдите в аккаунт, чтобы отметить отзыв');
+        navigateToTab('profile');
+        return false;
+      }
+      return (async () => {
+        try {
+          const data = await apiRequest(`/api/reviews/${encodeURIComponent(reviewId)}/like`, { method: 'POST' });
+          if (!data.liked) {
+            pushToast(data.message);
+            return false;
+          }
+          await refreshBackendCatalog();
+          return true;
+        } catch (error) {
+          pushToast(error.message);
+          return false;
+        }
+      })();
+    }
     const actorId = currentUser?.id || 'guest';
     let alreadyLiked = false;
     const newHotels = hotels.map(h => {
